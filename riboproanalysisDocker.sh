@@ -1057,62 +1057,68 @@ align_to_ref_genome()
 
 metagene_analysis()
 	{
-		echo "Metagene analysis :"
-
-		BASENAME_METAGENE="metagene_orfs"
-		LANDMARK="cds_start"
-
-		INPUT_ANNOTATION=$(basename $PATH_TO_ANNOTATION_FILE)
-		ANNOTATION_PREFIX=${INPUT_ANNOTATION:0:-4}
-
-		ANNOTATION_CDSLANDMARK="${ANNOTATION_PREFIX}_cdslandmark.gtf"
-		SORTED_ANNOTATION_CDSLANDMARK="${ANNOTATION_PREFIX}_cdslandmark_sorted.gtf"
-
-		if [ -s metagene_orfs_rois.txt ] && [ -s metagene_orfs_rois.bed ]
+		WORKING_ANSWER_RNASEQ_DATA=${ANSWER_RNASEQ_DATA^^}
+		if [ $WORKING_ANSWER_RNASEQ_DATA = YES ]
 		then
-			echo "Metagene analysis already done."
-			return 0
+			echo "Metagene analysis :"
+
+			BASENAME_METAGENE="metagene_orfs"
+			LANDMARK="cds_start"
+
+			INPUT_ANNOTATION=$(basename $PATH_TO_ANNOTATION_FILE)
+			ANNOTATION_PREFIX=${INPUT_ANNOTATION:0:-4}
+
+			ANNOTATION_CDSLANDMARK="${ANNOTATION_PREFIX}_cdslandmark.gtf"
+			SORTED_ANNOTATION_CDSLANDMARK="${ANNOTATION_PREFIX}_cdslandmark_sorted.gtf"
+
+			if [ -s metagene_orfs_rois.txt ] && [ -s metagene_orfs_rois.bed ]
+			then
+				echo "Metagene analysis already done."
+				return 0
+			else
+				echo "Add CoDing Sequences landmark to annotations :"
+
+				$PYTHON_SCRIPTS_PATH$PYTHON_SCRIPT_ADD_START_GTF -i $PATH_TO_ANNOTATION_FILE -o $ANNOTATION_CDSLANDMARK
+
+				if [ $? -ne 0 ]
+				then
+					echo "Cannot add CDS landmarks correctly."
+					exit 1
+				fi
+
+				sort -k1,1 -k4,4n $ANNOTATION_CDSLANDMARK > $SORTED_ANNOTATION_CDSLANDMARK
+
+				if [ $? -ne 0 ]
+				then
+					echo "Annotations file cannot be sorted."
+					exit 1
+				fi
+
+				docker run --rm --volumes-from ribopro -w /home plastid2 bash -c "metagene generate $BASENAME_METAGENE --landmark $LANDMARK --sorted --annotation_files $SORTED_ANNOTATION_CDSLANDMARK"
+
+				if [ $? -ne 0 ]
+				then
+					echo "Metagene analysis cannot run correctly."
+					exit 1
+				fi
+
+				gzip -9 $SORTED_ANNOTATION_CDSLANDMARK
+
+				if [ $? -ne 0 ]
+				then
+					echo "Cannot compress $SORTED_ANNOTATION_CDSLANDMARK correctly."
+					exit 1
+				fi
+
+				echo "End of metagene analysis."
+
+				chown $USER_IDS ${BASENAME_METAGENE}*
+				chown $USER_IDS $SORTED_ANNOTATION_CDSLANDMARK
+
+				rm $ANNOTATION_CDSLANDMARK
+			fi
 		else
-			echo "Add CoDing Sequences landmark to annotations :"
-
-			$PYTHON_SCRIPTS_PATH$PYTHON_SCRIPT_ADD_START_GTF -i $PATH_TO_ANNOTATION_FILE -o $ANNOTATION_CDSLANDMARK
-
-			if [ $? -ne 0 ]
-			then
-				echo "Cannot add CDS landmarks correctly."
-				exit 1
-			fi
-
-			sort -k1,1 -k4,4n $ANNOTATION_CDSLANDMARK > $SORTED_ANNOTATION_CDSLANDMARK
-
-			if [ $? -ne 0 ]
-			then
-				echo "Annotations file cannot be sorted."
-				exit 1
-			fi
-
-			docker run --rm --volumes-from ribopro -w /home plastid2 bash -c "metagene generate $BASENAME_METAGENE --landmark $LANDMARK --sorted --annotation_files $SORTED_ANNOTATION_CDSLANDMARK"
-
-			if [ $? -ne 0 ]
-			then
-				echo "Metagene analysis cannot run correctly."
-				exit 1
-			fi
-
-			gzip -9 $SORTED_ANNOTATION_CDSLANDMARK
-
-			if [ $? -ne 0 ]
-			then
-				echo "Cannot compress $SORTED_ANNOTATION_CDSLANDMARK correctly."
-				exit 1
-			fi
-
-			echo "End of metagene analysis."
-
-			chown $USER_IDS ${BASENAME_METAGENE}*
-			chown $USER_IDS $SORTED_ANNOTATION_CDSLANDMARK
-
-			rm $ANNOTATION_CDSLANDMARK
+			return 0
 		fi
 	}
 
@@ -1301,86 +1307,92 @@ sam_to_bam()
 
 p_offset_analysis()
 	{
-		echo "P-site offsets analysis :"
-
-		INPUT_METAGENE_ORF="metagene_orfs_rois.txt"
-                WORKING_ANSWER_DEMULTIPLEXING=${ANSWER_DEMULTIPLEXING^^}
-
-		if [ -s $INPUT_METAGENE_ORF ]
+		WORKING_ANSWER_RNASEQ_DATA=${ANSWER_RNASEQ_DATA^^}
+		if [ $WORKING_ANSWER_RNASEQ_DATA = YES ]
 		then
-			for cond in $CONDITION_ARRAY_UNIQ ## TODO Check if we can do it wuth GNU parallel. Problem is the passing of the arrays SAMPLE & CONDITIONS
-			do
-				echo  "P-site offsets analysis for $cond condition :"
-				BASENAME_RIBOPROFILE="${cond}_riboprofile"
-				METAGENE_PROFILE="${BASENAME_RIBOPROFILE}_metagene_profiles.txt"
-				P_OFFSETS="${BASENAME_RIBOPROFILE}_p_offsets.txt"
-				WORKING_P_OFFSETS="${cond}_p_offsets.txt"
-				P_OFFSETS_CORRECTED="${cond}_p_offsets_corrected.txt"
-				INPUT_COUNT_FILES=()
+			echo "P-site offsets analysis :"
 
-				if [ -s $WORKING_P_OFFSETS ] || [ -s $P_OFFSETS_CORRECTED ]
-				then
-					echo "P-site offsets analysis already done."
-					return 0
-				else
-					for index in ${!CONDITION_ARRAY[*]}
-					do
-						CURRENT_CONDITION=${CONDITION_ARRAY[$index]}
+			INPUT_METAGENE_ORF="metagene_orfs_rois.txt"
+                	WORKING_ANSWER_DEMULTIPLEXING=${ANSWER_DEMULTIPLEXING^^}
 
-						if [ $CURRENT_CONDITION = $cond ]
-						then
-							if [ $WORKING_ANSWER_DEMULTIPLEXING = "YES" ]
+			if [ -s $INPUT_METAGENE_ORF ]
+			then
+				for cond in $CONDITION_ARRAY_UNIQ ## TODO Check if we can do it wuth GNU parallel. Problem is the passing of the arrays SAMPLE & CONDITIONS
+				do
+					echo  "P-site offsets analysis for $cond condition :"
+					BASENAME_RIBOPROFILE="${cond}_riboprofile"
+					METAGENE_PROFILE="${BASENAME_RIBOPROFILE}_metagene_profiles.txt"
+					P_OFFSETS="${BASENAME_RIBOPROFILE}_p_offsets.txt"
+					WORKING_P_OFFSETS="${cond}_p_offsets.txt"
+					P_OFFSETS_CORRECTED="${cond}_p_offsets_corrected.txt"
+					INPUT_COUNT_FILES=()
+
+					if [ -s $WORKING_P_OFFSETS ] || [ -s $P_OFFSETS_CORRECTED ]
+					then
+						echo "P-site offsets analysis already done."
+						return 0
+					else
+						for index in ${!CONDITION_ARRAY[*]}
+						do
+							CURRENT_CONDITION=${CONDITION_ARRAY[$index]}
+
+							if [ $CURRENT_CONDITION = $cond ]
 							then
-								SAMPLE=${SAMPLE_ARRAY[$index]}
-							else
-								SAMPLE=$(basename ${SAMPLE_ARRAY[$index]} .fastq)
+								if [ $WORKING_ANSWER_DEMULTIPLEXING = "YES" ]
+								then
+									SAMPLE=${SAMPLE_ARRAY[$index]}
+								else
+									SAMPLE=$(basename ${SAMPLE_ARRAY[$index]} .fastq)
+								fi
+
+								INPUT_COUNT_FILES+=("${SAMPLE}_align_filtered.sorted.bam")
 							fi
+						done
 
-							INPUT_COUNT_FILES+=("${SAMPLE}_align_filtered.sorted.bam")
-						fi
-					done
-
-					docker run --rm --volumes-from ribopro -w /home plastid2 bash -c "psite $INPUT_METAGENE_ORF $BASENAME_RIBOPROFILE --min_length $MIN_LENGTH_POFFSET --max_length $MAX_LENGTH_POFFSET --require_upstream --aggregate --count_files ${INPUT_COUNT_FILES[*]} --keep --default $DEFAULT_POFFSET"
-
-					if [ $? -ne 0 ]
-					then
-						echo "P-site offsets analysis cannot run correctly."
-						exit 1
-					fi
-
-					grep -v "##" $P_OFFSETS | grep -v "length" | grep -v "default" > $WORKING_P_OFFSETS
-
-					WORKING_ANSWER_PSITE_CORRECTION=${ANSWER_PSITE_CORRECTION^^}
-
-					if [ $WORKING_ANSWER_PSITE_CORRECTION = YES ]
-					then
-						$PYTHON_SCRIPTS_PATH$PYTHON_SCRIPT_PSITE_AUTOCORRECTION -i $WORKING_P_OFFSETS -m $METAGENE_PROFILE -o $P_OFFSETS_CORRECTED
+						docker run --rm --volumes-from ribopro -w /home plastid2 bash -c "psite $INPUT_METAGENE_ORF $BASENAME_RIBOPROFILE --min_length $MIN_LENGTH_POFFSET --max_length $MAX_LENGTH_POFFSET --require_upstream --aggregate --count_files ${INPUT_COUNT_FILES[*]} --keep --default $DEFAULT_POFFSET"
 
 						if [ $? -ne 0 ]
 						then
-							echo "P-site offsets auto-correction cannot run correctly."
+							echo "P-site offsets analysis cannot run correctly."
 							exit 1
 						fi
+
+						grep -v "##" $P_OFFSETS | grep -v "length" | grep -v "default" > $WORKING_P_OFFSETS
+
+						WORKING_ANSWER_PSITE_CORRECTION=${ANSWER_PSITE_CORRECTION^^}
+
+						if [ $WORKING_ANSWER_PSITE_CORRECTION = YES ]
+						then
+							$PYTHON_SCRIPTS_PATH$PYTHON_SCRIPT_PSITE_AUTOCORRECTION -i $WORKING_P_OFFSETS -m $METAGENE_PROFILE -o $P_OFFSETS_CORRECTED
+
+							if [ $? -ne 0 ]
+							then
+								echo "P-site offsets auto-correction cannot run correctly."
+								exit 1
+							fi
+						fi
+
+						chown $USER_IDS ${BASENAME_RIBOPROFILE}*
+						chown $USER_IDS $WORKING_P_OFFSETS
+						chown $USER_IDS $P_OFFSETS_CORRECTED
+
+						echo "End of P-site offsets analysis."
+						echo "If you see a P-site offset of 0 or some odd p-offsets in $WORKING_P_OFFSETS and $P_OFFSETS_CORRECTED, you should correct them manually."
 					fi
+				done
 
-					chown $USER_IDS ${BASENAME_RIBOPROFILE}*
-					chown $USER_IDS $WORKING_P_OFFSETS
-					chown $USER_IDS $P_OFFSETS_CORRECTED
-
-					echo "End of P-site offsets analysis."
-					echo "If you see a P-site offset of 0 or some odd p-offsets in $WORKING_P_OFFSETS and $P_OFFSETS_CORRECTED, you should correct them manually."
+				WORKING_STOP_EXEC_PSITE_CORRECTION=${STOP_EXEC_PSITE_CORRECTION^^}
+				if [ $WORKING_STOP_EXEC_PSITE_CORRECTION = YES ]
+				then
+					echo "Execution stoped by STOP_EXEC_PSITE_CORRECTION parameter."
+					exit 1
 				fi
-			done
-
-			WORKING_STOP_EXEC_PSITE_CORRECTION=${STOP_EXEC_PSITE_CORRECTION^^}
-			if [ $WORKING_STOP_EXEC_PSITE_CORRECTION = YES ]
-			then
-				echo "Execution stoped by STOP_EXEC_PSITE_CORRECTION parameter."
+			else
+				echo "You need $INPUT_METAGENE_ORF file to launch P-site offsets analysis."
 				exit 1
 			fi
 		else
-			echo "You need $INPUT_METAGENE_ORF file to launch P-site offsets analysis."
-			exit 1
+			return 0
 		fi
 	}
 
@@ -1427,136 +1439,150 @@ rna_seq_quantification()
 					exit 1
 				fi
 			fi
+		else
+			return 0
 		fi
 	}
 
 cds_range_building()
 	{
-		echo "CDS range building :"
-
-		ANNOTATIONS_FILE=$(basename $PATH_TO_ANNOTATION_FILE)
-		ANNOTATION_PREFIX="${ANNOTATIONS_FILE:0:-4}"
-		CDS_RANGE="${ANNOTATION_PREFIX}_cds_range.txt"
-
-		if [ -s $CDS_RANGE ]
+		WORKING_ANSWER_RNASEQ_DATA=${ANSWER_RNASEQ_DATA^^}
+                if [ $WORKING_ANSWER_RNASEQ_DATA = YES ]
 		then
-			echo "CDS range building already done."
-			return 0
-		else
-			$PYTHON_SCRIPTS_PATH$PYTHON_SCRIPT_CDS_RANGE_GENERATOR -i $PATH_TO_ANNOTATION_FILE -o $CDS_RANGE
+			echo "CDS range building :"
 
-			if [ $? -ne 0 ]
+			ANNOTATIONS_FILE=$(basename $PATH_TO_ANNOTATION_FILE)
+			ANNOTATION_PREFIX="${ANNOTATIONS_FILE:0:-4}"
+			CDS_RANGE="${ANNOTATION_PREFIX}_cds_range.txt"
+
+			if [ -s $CDS_RANGE ]
 			then
-				echo "Cannot build CDS range in $CDS_RANGE file correctly."
-				exit 1
+				echo "CDS range building already done."
+				return 0
+			else
+				$PYTHON_SCRIPTS_PATH$PYTHON_SCRIPT_CDS_RANGE_GENERATOR -i $PATH_TO_ANNOTATION_FILE -o $CDS_RANGE
+
+				if [ $? -ne 0 ]
+				then
+					echo "Cannot build CDS range in $CDS_RANGE file correctly."
+					exit 1
+				fi
+
+				chown $USER_IDS $CDS_RANGE
+
+				echo "End of CDS range buiding"
 			fi
-
-			chown $USER_IDS $CDS_RANGE
-
-			echo "End of CDS range buiding"
+		else
+			return 0
 		fi
 	}
 
 isoform_level_estimation()
 	{
-		echo "Starting of Isoform-level ribosome occupancy guided by transcript abundance :"
-
-		WORKING_ANSWER_DEMULTIPLEXING=${ANSWER_DEMULTIPLEXING^^}
-		ANNOTATIONS_FILE=$(basename $PATH_TO_ANNOTATION_FILE)
-		ANNOTATION_PREFIX="${ANNOTATIONS_FILE:0:-4}"
-		CDS_RANGE="${ANNOTATION_PREFIX}_cds_range.txt"
-		TRANSCRIPTOME_FASTA_FILE=$(basename $PATH_TO_REFERENCE_TRANSCRIPTOME_FILE)
-		RIBOMAP_OUTDIR=isoform_level_estimation_analyis
-
-		mkdir -p $RIBOMAP_OUTDIR
-
-		if [ $? -ne 0 ]
+		WORKING_ANSWER_RNASEQ_DATA=${ANSWER_RNASEQ_DATA^^}
+		if [ $WORKING_ANSWER_RNASEQ_DATA = YES ]
 		then
-			echo "Cannot build $RIBOMAP_OUTDIR directory."
-			exit 1
-		fi
+			echo "Starting of Isoform-level ribosome occupancy guided by transcript abundance :"
 
-		for sample in ${SAMPLE_ARRAY[*]}
-		do
-			if [ $WORKING_ANSWER_DEMULTIPLEXING = "YES" ]
+			WORKING_ANSWER_DEMULTIPLEXING=${ANSWER_DEMULTIPLEXING^^}
+			ANNOTATIONS_FILE=$(basename $PATH_TO_ANNOTATION_FILE)
+			ANNOTATION_PREFIX="${ANNOTATIONS_FILE:0:-4}"
+			CDS_RANGE="${ANNOTATION_PREFIX}_cds_range.txt"
+			TRANSCRIPTOME_FASTA_FILE=$(basename $PATH_TO_REFERENCE_TRANSCRIPTOME_FILE)
+			RIBOMAP_OUTDIR=isoform_level_estimation_analyis
+
+			mkdir -p $RIBOMAP_OUTDIR
+
+			if [ $? -ne 0 ]
 			then
-				SAMPLE=$sample
-			else
-				SAMPLE=$(basename $sample .fastq)
+				echo "Cannot build $RIBOMAP_OUTDIR directory."
+				exit 1
 			fi
 
-			RIBOMAP_OUTPUT="${SAMPLE}_isoform_level_estimation"
-			RIBOMAP_OUTPUT_DIR_SAMPLE="${RIBOMAP_OUTDIR}/${SAMPLE}"
-			RNASEQ_BAM="${SAMPLE}_mRNA.transcriptome.mapping.bam"
-			RIBO_BAM="${SAMPLE}_align_star/Aligned.toTranscriptome.out.bam"
-			RNA_QUANTIFICATION="${SAMPLE}_mRNA_quantification/quant.sf"
-			LOGFILE="${SAMPLE}_isoform_level_assignment.log"
-
-			if [ -e $RIBOMAP_OUTPUT_DIR_SAMPLE ]
-			then
-				if [ -s "${RIBOMAP_OUTPUT_DIR_SAMPLE}/${RIBOMAP_OUTPUT}_abundant.list" ]
+			for sample in ${SAMPLE_ARRAY[*]}
+			do
+				if [ $WORKING_ANSWER_DEMULTIPLEXING = "YES" ]
 				then
-					echo "Isoform-level estimation already done for $SAMPLE"
+					SAMPLE=$sample
+				else
+					SAMPLE=$(basename $sample .fastq)
 				fi
-			else
-				for index in ${!SAMPLE_ARRAY[*]}
-				do
-					if [ $SAMPLE = ${SAMPLE_ARRAY[$index]} ]
+
+				RIBOMAP_OUTPUT="${SAMPLE}_isoform_level_estimation"
+				RIBOMAP_OUTPUT_DIR_SAMPLE="${RIBOMAP_OUTDIR}/${SAMPLE}"
+				RNASEQ_BAM="${SAMPLE}_mRNA.transcriptome.mapping.bam"
+				RIBO_BAM="${SAMPLE}_align_star/Aligned.toTranscriptome.out.bam"
+				RNA_QUANTIFICATION="${SAMPLE}_mRNA_quantification/quant.sf"
+				LOGFILE="${SAMPLE}_isoform_level_assignment.log"
+
+				if [ -e $RIBOMAP_OUTPUT_DIR_SAMPLE ]
+				then
+					if [ -s "${RIBOMAP_OUTPUT_DIR_SAMPLE}/${RIBOMAP_OUTPUT}_abundant.list" ]
 					then
-						SAMPLE_COND=${CONDITION_ARRAY[$index]}
+						echo "Isoform-level estimation already done for $SAMPLE"
 					fi
-				done
-
-				if [ -s "${SAMPLE_COND}_p_offsets_corrected.txt" ]
-				then
-					POFFSET="${SAMPLE_COND}_p_offsets_corrected.txt"
-
-				elif [ -s "${SAMPLE_COND}_p_offsets.txt" ]
-				then
-					POFFSET="${SAMPLE_COND}_p_offsets.txt"
 				else
-					echo "P-site offsets file is needed for this step."
-					exit 1
+					for index in ${!SAMPLE_ARRAY[*]}
+					do
+						if [ $SAMPLE = ${SAMPLE_ARRAY[$index]} ]
+						then
+							SAMPLE_COND=${CONDITION_ARRAY[$index]}
+						fi
+					done
+
+					if [ -s "${SAMPLE_COND}_p_offsets_corrected.txt" ]
+					then
+						POFFSET="${SAMPLE_COND}_p_offsets_corrected.txt"
+
+					elif [ -s "${SAMPLE_COND}_p_offsets.txt" ]
+					then
+						POFFSET="${SAMPLE_COND}_p_offsets.txt"
+					else
+						echo "P-site offsets file is needed for this step."
+						exit 1
+					fi
+
+					if [ ! $RNASEQ_LIBTYPE = "unstranded" ]
+					then
+						docker run --rm --volumes-from ribopro -w /home genomicpariscentre/ribomap:1.2 bash -c "riboprof --fasta /transcriptomedirectory/${TRANSCRIPTOME_FASTA_FILE} --mrnabam $RNASEQ_BAM --ribobam $RIBO_BAM --min_fplen $MIN_FPLEN --max_fplen $MAX_FPLEN --offset $POFFSET --cds_range $CDS_RANGE --sf $RNA_QUANTIFICATION --out $RIBOMAP_OUTPUT --useSecondary --tabd_cutoff 0 > $LOGFILE"
+					else
+						docker run --rm --volumes-from ribopro -w /home genomicpariscentre/ribomap:1.2 bash -c "riboprof --fasta /transcriptomedirectory/${TRANSCRIPTOME_FASTA_FILE} --mrnabam $RNASEQ_BAM --ribobam $RIBO_BAM --min_fplen $MIN_FPLEN --max_fplen $MAX_FPLEN --offset $POFFSET --cds_range $CDS_RANGE --sf $RNA_QUANTIFICATION --out $RIBOMAP_OUTPUT --useSecondary --useRC --tabd_cutoff 0 > $LOGFILE"
+					fi
+
+					if [ $? -ne 0 ]
+					then
+						echo "Isoform-level estimation cannot run corrctly."
+						exit 1
+					fi
+
+					echo "End of Isoform-level estimation for ${SAMPLE}."
+
+					mkdir -p $RIBOMAP_OUTPUT_DIR_SAMPLE
+
+					if [ $? -ne 0 ]
+					then
+						echo "Cannot build $RIBOMAP_OUTPUT_DIR_SAMPLE directory."
+						exit 1
+					fi
+
+					for file in $(ls ${RIBOMAP_OUTPUT}*)
+					do
+						mv $file $RIBOMAP_OUTPUT_DIR_SAMPLE
+					done
+
+					chown -R $USER_IDS $RIBOMAP_OUTPUT_DIR_SAMPLE
+					chown $USER_IDS $LOGFILE
+
+					if [ $? -ne 0 ]
+					then
+						echo "Cannot move $SAMPLE results in $RIBOMAP_OUTPUT_DIR_SAMPLE directory"
+						exit 1
+					fi
 				fi
-
-				if [ ! $RNASEQ_LIBTYPE = "unstranded" ]
-				then
-					docker run --rm --volumes-from ribopro -w /home genomicpariscentre/ribomap:1.2 bash -c "riboprof --fasta /transcriptomedirectory/${TRANSCRIPTOME_FASTA_FILE} --mrnabam $RNASEQ_BAM --ribobam $RIBO_BAM --min_fplen $MIN_FPLEN --max_fplen $MAX_FPLEN --offset $POFFSET --cds_range $CDS_RANGE --sf $RNA_QUANTIFICATION --out $RIBOMAP_OUTPUT --useSecondary --tabd_cutoff 0 > $LOGFILE"
-				else
-					docker run --rm --volumes-from ribopro -w /home genomicpariscentre/ribomap:1.2 bash -c "riboprof --fasta /transcriptomedirectory/${TRANSCRIPTOME_FASTA_FILE} --mrnabam $RNASEQ_BAM --ribobam $RIBO_BAM --min_fplen $MIN_FPLEN --max_fplen $MAX_FPLEN --offset $POFFSET --cds_range $CDS_RANGE --sf $RNA_QUANTIFICATION --out $RIBOMAP_OUTPUT --useSecondary --useRC --tabd_cutoff 0 > $LOGFILE"
-				fi
-
-				if [ $? -ne 0 ]
-				then
-					echo "Isoform-level estimation cannot run corrctly."
-					exit 1
-				fi
-
-				echo "End of Isoform-level estimation for ${SAMPLE}."
-
-				mkdir -p $RIBOMAP_OUTPUT_DIR_SAMPLE
-
-				if [ $? -ne 0 ]
-				then
-					echo "Cannot build $RIBOMAP_OUTPUT_DIR_SAMPLE directory."
-					exit 1
-				fi
-
-				for file in $(ls ${RIBOMAP_OUTPUT}*)
-				do
-					mv $file $RIBOMAP_OUTPUT_DIR_SAMPLE
-				done
-
-				chown -R $USER_IDS $RIBOMAP_OUTPUT_DIR_SAMPLE
-				chown $USER_IDS $LOGFILE
-
-				if [ $? -ne 0 ]
-				then
-					echo "Cannot move $SAMPLE results in $RIBOMAP_OUTPUT_DIR_SAMPLE directory"
-					exit 1
-				fi
-			fi
-		done
+			done
+		else
+			return 0
+		fi
 	}
 
 sam_to_bam_seqcluster()
@@ -1944,21 +1970,21 @@ anadif_sartools()
 				exit 1
 			fi
 
-			#echo "Building design file target.txt to do differential analysis :"
-			#echo -e "label\\tfiles\group" >> ${WORKDIR_ANADIFF}/target.txt
-			#for index in ${!SAMPLE_ARRAY[*]}
-			#do
-			#       WORKING_ANSWER_DEMULTIPLEXING=${ANSWER_DEMULTIPLEXING^^}
+			echo "Building design file target.txt to do differential analysis :"
+			echo -e "label\\tfiles\group" >> ${WORKDIR_ANADIFF}/target.txt
+			for index in ${!SAMPLE_ARRAY[*]}
+			do
+			       WORKING_ANSWER_DEMULTIPLEXING=${ANSWER_DEMULTIPLEXING^^}
 
-			#       if  [ $WORKING_ANSWER_DEMULTIPLEXING = "YES" ]
-			#       then
-			#               SAMPLE=${SAMPLE_ARRAY[$index]}
-			#       else
-			#               SAMPLE=$(basename ${SAMPLE_ARRAY[$index]} .fastq)
-			#       fi
+			       if  [ $WORKING_ANSWER_DEMULTIPLEXING = "YES" ]
+			       then
+			               SAMPLE=${SAMPLE_ARRAY[$index]}
+			       else
+			               SAMPLE=$(basename ${SAMPLE_ARRAY[$index]} .fastq)
+			       fi
 
-			#       echo -e "${SAMPLE}_htseq.txt\\t${CONDITION_ARRAY[$index]}" >> ${WORKDIR_ANADIFF}/target.txt
-			#done
+			       echo -e "${SAMPLE}_htseq.txt\\t${CONDITION_ARRAY[$index]}" >> ${WORKDIR_ANADIFF}/target.txt
+			done
 
 			PARAM=($WORKDIR_ANADIFF $1 $2 target.txt $WORKDIR_ANADIFF $3)  # 1 Working directory, 2 project name, 3 author name, 4 design (target.txt), 5 directory with counts files, 6 biological refence condition
 			WORK_PARAM=$(echo ${PARAM[*]})
