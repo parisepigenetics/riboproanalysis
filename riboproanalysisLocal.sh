@@ -33,6 +33,10 @@ export CHECK_DOCKER_IMAGES=NO
 export ANSWER_PSITE_CORRECTION=YES
 export STOP_EXEC_PSITE_CORRECTION=NO
 
+#### TODO
+# Integrate parameter CASAVA_VERSION --> if 1.8 --> Run remove bad IQF (Illumina Qiality Filter) ; if not 1.8 --> DON'T run remove bad IQF (Illumina Qiality Filter)
+# Integrate parameter ANSWER_SPLICING_JUNCTIONS --> if YES let the STAR command line for mapping has it is ; if NO --> DON'T do splcing using --alignIntronMax 1 parameter of STAR
+
 # Import configuration (.conf) file edited by th user : it erases default variables
 source $1
 
@@ -322,6 +326,9 @@ then
 		docker pull genomicpariscentre/babel:0.3-0
 		docker pull genomicpariscentre/sartools:1.3.2
 		docker pull genomicpariscentre/bcbio-nextgen:1.0.0a0
+		docker pull parisepigenetics/plastid:0.4.6
+#		docker pull parisepigenetics/riboseqr:1.6.0	TODO Integrate RiboSeqR
+#		docker pull parisepigenetics/umitools:0.2.6	TODO Integrate Umitools
 	else
 		echo "Check your CHECK_DOCKER_IMAGES parameter. It must be YES or NO."
 		exit 1
@@ -1059,7 +1066,7 @@ metagene_analysis()
 					exit 1
 				fi
 
-				docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home -v "${WORKDIR}/${SORTED_ANNOTATION_CDSLANDMARK}:/run/${SORTED_ANNOTATION_CDSLANDMARK}" plastid2 bash -c "metagene generate $BASENAME_METAGENE --landmark $LANDMARK --sorted --annotation_files /run/${SORTED_ANNOTATION_CDSLANDMARK}"
+				docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home -v "${WORKDIR}/${SORTED_ANNOTATION_CDSLANDMARK}:/run/${SORTED_ANNOTATION_CDSLANDMARK}" parisepigenetics/plastid:0.4.6 bash -c "metagene generate $BASENAME_METAGENE --landmark $LANDMARK --sorted --annotation_files /run/${SORTED_ANNOTATION_CDSLANDMARK}"
 
 				if [ $? -ne 0 ]
 	                	then
@@ -1309,7 +1316,7 @@ p_offset_analysis()
 
 						#echo ${INPUT_COUNT_FILES[*]}
 
-						docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home plastid2 bash -c "psite $INPUT_METAGENE_ORF $BASENAME_RIBOPROFILE --min_length $MIN_LENGTH_POFFSET --max_length $MAX_LENGTH_POFFSET --require_upstream --aggregate --count_files ${INPUT_COUNT_FILES[*]} --keep --default $DEFAULT_POFFSET"
+						docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home parisepigenetics/plastid:0.4.6 bash -c "psite $INPUT_METAGENE_ORF $BASENAME_RIBOPROFILE --min_length $MIN_LENGTH_POFFSET --max_length $MAX_LENGTH_POFFSET --require_upstream --aggregate --count_files ${INPUT_COUNT_FILES[*]} --keep --default $DEFAULT_POFFSET"
 
 						if [ $? -ne 0 ]
 						then
