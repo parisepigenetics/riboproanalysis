@@ -24,13 +24,15 @@ STAR --runMode genomeGenerate --genomeDir /path/to/genome/index --genomeFastaFil
 --sjdbOverhang 28
 ```
 
-* Create a tmp/ directory in your working directory with the command: (TODO I think that the script is already doing that)
+<!--- (TODO I think that the script is already doing that)
+* Create a tmp/ directory in your working directory with the command:
 ```
 mkdir tmp/
 ```
+--->
 
 3. Run the pipeline (there are two options):
-  a. Run RiboProAnalysis docker container with the following command in the working directory:
+  * Run RiboProAnalysis docker container with the following command in the working directory:
   ```
   docker run --rm --privileged --name ribopro -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd):/home -w /home \
   -v /etc/passwd:/etc/passwd
@@ -43,7 +45,7 @@ mkdir tmp/
   parisepigenetics/riboproanalysis bash -c "riboproanalysisDocker.sh My_configuration_file.conf"
   ```
 
-  b. Run RiboProAnalysis bash program with following command in the working directory :
+  * Run RiboProAnalysis bash program with following command in the working directory :
   ```
   riboproanalysis.sh MyConfigurationFile.conf
   ```
