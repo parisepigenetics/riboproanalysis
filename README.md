@@ -1,11 +1,10 @@
 # RiboProAnalysis
-=================
 
 **RiboProAnalysis** is a pipeline for Ribosome Profiling analysis af any eukaryotic genome from Ensembl 75+.
 It performs all the neccessry pre-processing steps (quality control, filtering, trimming and size selection), reads mapping to rRNA and reference genome, counting on CDS for each gene and differential analysis from raw Ribosome Profiling data.
 
 ## Use:
-RiboProAnalysis can be used either via a Docker image (_URL_) or a standard Bash script with several cases: it can performs demultiplexing on multiplexed FASTQ (reads MUST begin with the index sequence) and use of RNA-seq counts to give a study of the mode of regulation of the translation.
+RiboProAnalysis can be used either via a Docker image (_URL!_) or a standard Bash script with several cases: it can performs demultiplexing on multiplexed FASTQ (reads MUST begin with the index sequence) and use of RNA-seq counts to give a study of the mode of regulation of the translation.
 If you use FASTQ files (no demultiplexing), the extension have to be .fastq
 
 A configuration file .conf is mandatory to launch the pipeline.
@@ -13,11 +12,13 @@ If there is no use of RNA-seq counts, a tabulated design file -named target.txt-
 The user have to build rRNA and genome index files before start running the pipeline.
 If you have RNA-seq counts files they must be named: SAMPLENAME_mRNAcounts.txt for counts file and SAMPLENAME_mRNA.transcriptome.mapping.bam for mapping to transcriptome BAM files.
 
-* Build Bowtie1 index for rRNA sequences:
+### Steps to run the pipeline:
+
+1. Build a bowtie index for rRNA sequences (use Bowtie1):
 ```
 bowtie-build rRNA.fasta rRNA
 ```
-* Build STAR index for reference genome:
+2. Build a STAR index for reference genome:
 ```
 STAR --runMode genomeGenerate --genomeDir /path/to/genome/index --genomeFastaFiles /path/to/genome/fasta1 /path/to/genome/fasta2 ... --sjdbGTFfile /path/to/gtf/annotations \
 --sjdbOverhang 28
@@ -28,23 +29,24 @@ STAR --runMode genomeGenerate --genomeDir /path/to/genome/index --genomeFastaFil
 mkdir tmp/
 ```
 
-* Run RiboProAnalysis docker container with the following command in the working directory:
-```
-docker run --rm --privileged --name ribopro -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd):/home -w /home \
--v /etc/passwd:/etc/passwd
--v /path/to/rRNA/index:/rRNAindexdirectory \
--v /path/to/genome/index:/genomeindexdirectory \
--v /path/to/directory/containig/genome/fasta/file:/genomefastafiledirectory \
--v /path/to/directory/containing/transcriptome/fasta/file:/transcriptomedirectory \
--v /path/to/directory/containig/GTF/Ensembl/annotations:/root \
--v $(pwd)/tmp:/tmp \
-parisepigenetics/riboproanalysis bash -c "riboproanalysisDocker.sh My_configuration_file.conf"
-```
+3. Run the pipeline (there are two options):
+  a. Run RiboProAnalysis docker container with the following command in the working directory:
+  ```
+  docker run --rm --privileged --name ribopro -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd):/home -w /home \
+  -v /etc/passwd:/etc/passwd
+  -v /path/to/rRNA/index:/rRNAindexdirectory \
+  -v /path/to/genome/index:/genomeindexdirectory \
+  -v /path/to/directory/containig/genome/fasta/file:/genomefastafiledirectory \
+  -v /path/to/directory/containing/transcriptome/fasta/file:/transcriptomedirectory \
+  -v /path/to/directory/containig/GTF/Ensembl/annotations:/root \
+  -v $(pwd)/tmp:/tmp \
+  parisepigenetics/riboproanalysis bash -c "riboproanalysisDocker.sh My_configuration_file.conf"
+  ```
 
-* Run RiboProAnalysis bash program with following command in the working directory :
-```
-riboproanalysis.sh MyConfigurationFile.conf
-```
+  b. Run RiboProAnalysis bash program with following command in the working directory :
+  ```
+  riboproanalysis.sh MyConfigurationFile.conf
+  ```
 
 ## Variables to set in the configuration file
 ```
@@ -59,7 +61,7 @@ riboproanalysis.sh MyConfigurationFile.conf
 | SAMPLE_ARRAY                         | Array containing sample names (if demultiplexing) or FASTQ file for each sample                                                     | (Sample1 Sample 2 Sample 3) OR (Samp1.fastq Samp2.fastq Samp3.fastq) | Mandatory                          |
 | CONDITION_ARRAY                      | Array containig condition name of each sample respecting the same order                                                             | (Cond_Samp1 Cond_Samp2 Cond_Samp3)                                   | Mandatory                          |
 | ADAPTER_SEQUENCE_THREE_PRIME         | Adapter sequence for 3' trimming                                                                                                    | AAAAAAAGGTCCTAA                                                      | Mandatory                          |
-| STRANDED                             | Answer for stranded option of HTSeq-Count                                                                                           | yes/no/reverse                                                        | Mandatory                          |
+| STRANDED                             | Answer for stranded option of HTSeq-Count                                                                                           | yes/no/reverse                                                       | Mandatory                          |
 | PATH_TO_RAW_UNDEMULTIPLEXED_FILE     | Absolute path to multiplexed FASTQ file                                                                                             | /absolute/path/to/multiplexed/fastq                                  | Mandatory for demultiplexing       |
 | SAMPLE_INDEX_ARRAY                   | Array containing 5' index used for demultiplexing. Respect same order as in SAMPLE_ARRAY so index match with respective sample name | (IndexSamp1 IndexSamp2 IndexSamp3)                                   | Mandatory for demultiplexing       |
 | ANSWER_REMOVE_POLYN_READS            | Parameter to remove reads containing more than 2 N bases                                                                            | YES / NO                                                             | NO                                 |
@@ -81,7 +83,7 @@ This software could be launched from a Docker container launching Docker contain
 
 You should :
 * Install Docker on your computer
-* Pull the following docker images from the "Genomic Paris Centre" docker public repository on github:
+* Pull the following docker images from the [Genomic Paris Centre](https://github.com/GenomicParisCentre) dockerfiles public repository on github:
 	* genomicpariscentre/fastqc:0.11.5
 	* genomicpariscentre/cutadapt:1.8.3
 	* genomicpariscentre/bowtie1:1.1.1
@@ -96,7 +98,7 @@ You should :
 
 ## Input files:
 
-###Configuration file :
+### Configuration file:
 You have to create your configuration file .conf in the working directory. It is a little Bash script which is imported in the main Bash script.
 You put mandatory and interesting variables presented in **Available variables to set in the configuration file**.
 
