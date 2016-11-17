@@ -13,6 +13,12 @@ The user have to build rRNA and genome index files before start running the pipe
 If you have RNA-seq counts files they must be named: SAMPLENAME_mRNAcounts.txt for counts file and SAMPLENAME_mRNA.transcriptome.mapping.bam for mapping to transcriptome BAM files.
 
 ### Steps to run the pipeline
+<!--- (TODO I think that the script is already doing that)
+* Create a tmp/ directory in your working directory with the command:
+```
+mkdir tmp/
+```
+--->
 1. Build a bowtie index for rRNA sequences (use Bowtie1):
 ```
 bowtie-build rRNA.fasta rRNA
@@ -22,12 +28,6 @@ bowtie-build rRNA.fasta rRNA
 STAR --runMode genomeGenerate --genomeDir /path/to/genome/index --genomeFastaFiles /path/to/genome/fasta1 /path/to/genome/fasta2 ... --sjdbGTFfile /path/to/gtf/annotations \
 --sjdbOverhang 28
 ```
-<!--- (TODO I think that the script is already doing that)
-* Create a tmp/ directory in your working directory with the command:
-```
-mkdir tmp/
-```
---->
 3. Run the pipeline (there are two options):
   * Run RiboProAnalysis docker container with the following command in the working directory:
   ```
@@ -142,4 +142,4 @@ export SAMPLE_INDEX_ARRAY=(NA)
 export ADAPTER_SEQUENCE_THREE_PRIME=AGATCGGAAGAGCGGTTCAG
 export STRANDED=yes
 ```
-(TODO: perhaps we can upload the yeast data so that people can run the exemplary analysis)
+<!---TODO: perhaps we can upload the yeast data so that people can run the exemplary analysis--->
