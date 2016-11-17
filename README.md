@@ -3,7 +3,7 @@
 **RiboProAnalysis** is a pipeline for Ribosome Profiling analysis af any eukaryotic genome from Ensembl 75+.
 It performs all the neccessry pre-processing steps (quality control, filtering, trimming and size selection), reads mapping to rRNA and reference genome, counting on CDS for each gene and differential analysis from raw Ribosome Profiling data.
 
-## Use:
+## Usage
 RiboProAnalysis can be used either via a Docker image (_URL!_) or a standard Bash script with several cases: it can performs demultiplexing on multiplexed FASTQ (reads MUST begin with the index sequence) and use of RNA-seq counts to give a study of the mode of regulation of the translation.
 If you use FASTQ files (no demultiplexing), the extension have to be .fastq
 
@@ -12,8 +12,7 @@ If there is no use of RNA-seq counts, a tabulated design file -named target.txt-
 The user have to build rRNA and genome index files before start running the pipeline.
 If you have RNA-seq counts files they must be named: SAMPLENAME_mRNAcounts.txt for counts file and SAMPLENAME_mRNA.transcriptome.mapping.bam for mapping to transcriptome BAM files.
 
-### Steps to run the pipeline:
-
+### Steps to run the pipeline
 1. Build a bowtie index for rRNA sequences (use Bowtie1):
 ```
 bowtie-build rRNA.fasta rRNA
@@ -23,14 +22,12 @@ bowtie-build rRNA.fasta rRNA
 STAR --runMode genomeGenerate --genomeDir /path/to/genome/index --genomeFastaFiles /path/to/genome/fasta1 /path/to/genome/fasta2 ... --sjdbGTFfile /path/to/gtf/annotations \
 --sjdbOverhang 28
 ```
-
 <!--- (TODO I think that the script is already doing that)
 * Create a tmp/ directory in your working directory with the command:
 ```
 mkdir tmp/
 ```
 --->
-
 3. Run the pipeline (there are two options):
   * Run RiboProAnalysis docker container with the following command in the working directory:
   ```
@@ -44,13 +41,12 @@ mkdir tmp/
   -v $(pwd)/tmp:/tmp \
   parisepigenetics/riboproanalysis bash -c "riboproanalysisDocker.sh My_configuration_file.conf"
   ```
-
   * Run RiboProAnalysis bash program with following command in the working directory :
   ```
   riboproanalysis.sh MyConfigurationFile.conf
   ```
 
-## Variables to set in the configuration file
+### Variables to set in the configuration file
 ```
 | Variables                            | Explanation                                                                                                                         | Choices/Examples                                                     | Default                            |
 |--------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------|------------------------------------|
@@ -80,11 +76,11 @@ mkdir tmp/
 | CHECK_DOCKER_IMAGES                  | Check the tags of Docker images                                                                                                     | YES / NO                                                             | NO                                 |
 ```
 
-## Installation:
+## Installation
 This software could be launched from a Docker container launching Docker containers itself, or from a Bash script launching Docker containers.
 
-You should :
-* Install Docker on your computer
+You should:
+* Install Docker on your machine.
 * Pull the following docker images from the [Genomic Paris Centre](https://github.com/GenomicParisCentre) dockerfiles public repository on github:
 	* genomicpariscentre/fastqc:0.11.5
 	* genomicpariscentre/cutadapt:1.8.3
@@ -96,11 +92,11 @@ You should :
 	* genomicpariscentre/babel:0.3-0
 	* genomicpariscentre/sartools:1.3.2
 
-* Pull RiboProAnalysis image
+* Pull RiboProAnalysis image.
 
-## Input files:
+## Input files
 
-### Configuration file:
+### Configuration file
 You have to create your configuration file .conf in the working directory. It is a little Bash script which is imported in the main Bash script.
 You put mandatory and interesting variables presented in **Available variables to set in the configuration file**.
 
