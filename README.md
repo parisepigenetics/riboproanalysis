@@ -4,7 +4,7 @@
 It performs all the neccessry pre-processing steps (quality control, filtering, trimming and size selection), reads mapping to rRNA and reference genome, counting on CDS for each gene and differential analysis from raw Ribosome Profiling data.
 
 ## Usage
-RiboProAnalysis can be used either via a Docker image (_URL!_) or a standard Bash script with several cases: it can performs demultiplexing on multiplexed FASTQ (reads MUST begin with the index sequence) and use of RNA-seq counts to give a study of the mode of regulation of the translation.
+RiboProAnalysis can be used either via a Docker image (_URL!!!_) or a standard Bash script with several cases: it can performs demultiplexing on multiplexed FASTQ (reads MUST begin with the index sequence) and use of RNA-seq counts to give a study of the mode of regulation of the translation.
 If you use FASTQ files (no demultiplexing), the extension have to be .fastq
 
 A configuration file .conf is mandatory to launch the pipeline.
@@ -28,7 +28,7 @@ STAR --runMode genomeGenerate --genomeDir /path/to/genome/index --genomeFastaFil
 mkdir tmp/
 ```--->
 * Run the pipeline (there are two options):
-  * Run RiboProAnalysis docker container with the following command in the working directory:
+  * Run the RiboProAnalysis docker container (docker mode) with the following command in the working directory:
   ```
   docker run --rm --privileged --name ribopro -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd):/home -w /home \
   -v /etc/passwd:/etc/passwd
@@ -40,20 +40,43 @@ mkdir tmp/
   -v $(pwd)/tmp:/tmp \
   parisepigenetics/riboproanalysis bash -c "riboproanalysisDocker.sh My_configuration_file.conf"
   ```
-  * Run RiboProAnalysis bash program with following command in the working directory :
+  * Run the RiboProAnalysis bash script (local mode) with the following command in the working directory :
   ```
   riboproanalysis.sh MyConfigurationFile.conf
   ```
 
 ### Variables to set in the configuration file
 
-Variables | Explanation | Choices/Examples | Default
-----------|-------------|------------------|--------
-PATH_TO_GENOME_INDEX | Absolute path to genome index previously built with STAR | /absolute/path/to/genome/index | Mandatory if not Docker mode
-PATH_TO_rRNA_INDEX | Absolute path to rRNA index previously built with Bowtie1 | /absolute/path/to/rRNA/index | Mandatory if not Docker mode
+Variables | Explanation |  Choices-Examples  | Default
+----------|-------------|--------------------|--------
+PATH_TO_GENOME_INDEX | Absolute path to genome index previously built with STAR | /absolute/path/to/genome/index | Mandatory for the local mode
+PATH_TO_rRNA_INDEX | Absolute path to rRNA index previously built with Bowtie1 | /absolute/path/to/rRNA/index | Mandatory for the local mode
+PATH_TO_ANNOTATION_FILE | Absolute path to GTF annotations file (Ensembl 75+) | /absolute/path/to/gtf/annotations | Mandatory
+PATH_TO_REFERENCE_TRANSCRIPTOME_FILE | Absolute path to transcriptome FASTA file (based on genome fasta file from Ensembl 75+) | /absolute/path/to/transcriptome/fasta/file | Mandatory with RNA-seq data
+PATH_TO_REFERENCE_GENOME_FILE | Absolute file to genome FASTA file from Ensembl 75+ | /absolute/path/to/genome/fasta/file | Mandatory
+USER_IDS | Result of the bash command : $(id -u):$(id -g) | UserId:GroupId | Mandatory for Docker mode
+SAMPLE_ARRAY | Array containing sample names (if demultiplexing) or FASTQ file for each sample | (Sample1 Sample 2 Sample 3) OR (Samp1.fastq Samp2.fastq Samp3.fastq) | Mandatory
+CONDITION_ARRAY | Array containig condition name of each sample respecting the same order | (Cond_Samp1 Cond_Samp2 Cond_Samp3) | Mandatory
+ADAPTER_SEQUENCE_THREE_PRIME | Adapter sequence for 3' trimming | AAAAAAAGGTCCTAA | Mandatory
+STRANDED | Answer for stranded option of HTSeq-Count | yes/no/reverse | Mandatory
+PATH_TO_RAW_UNDEMULTIPLEXED_FILE | Absolute path to multiplexed FASTQ file | /absolute/path/to/multiplexed/fastq | Mandatory for demultiplexing
+SAMPLE_INDEX_ARRAY | Array containing 5' index used for demultiplexing. Must be in the same order as in SAMPLE_ARRAY, index match with respective sample name | (IndexSamp1 IndexSamp2 IndexSamp3) | Mandatory for demultiplexing
+ANSWER_REMOVE_POLYN_READS | Parameter to remove reads containing more than 2 N bases | YES / NO | NO
+ANSWER_DEMULTIPLEXING | Parameter to launch demultiplexing step | YES / NO | NO
+ANSWER_REMOVE_PCR_DUPLICATES | Parameter to launch PCR duplicates removing | YES / NO | NO
+ANSWER_RNASEQ_DATA | Parameter to launch differential analysis with or without RNA-seq data | YES / NO | NO
+ANSWER_PE_RNASEQ | Parameter to know if RNA-seq data (if provided) are paired-end or not | YES / NO | NO
+ANSWER_PSITE_CORRECTION | Parameter to know if the script of p-site offset auto-correction will ba used or not | YES / NO | YES
+RNASEQ_LIBTYPE | Parameter to know the orientation of RNA-seq data (if provided) | reversestrand/forwardstrand/unstranded | Mandatory for RNA-seq data
+STOP_EXEC_PSITE_CORRECTION | Parameter to stop the pipeline to correct p-site offset file by hand | YES / NO | NO
+DIFFERENTIAL_ANALYSIS_PACKAGE | Choice of the R package used by SARTools | DESEQ2 / EDGER | EDGER
+AUTHOR | Author's name | Alexandra | Mandatory for SARTools
+REFERENCE_CONDITION | Reference condition for the statistical analysis of SARTools | WT | Mandatory for SARTools
+CHECK_DOCKER_IMAGES | Check the tags of Docker images | YES / NO | NO
+
 
 ## Installation
-This software could be launched from a Docker container launching Docker containers itself, or from a Bash script launching Docker containers.
+This software could be launched from a docker container launching docker containers itself (docker mode), or from a bash script launching docker containers (bash mode).
 
 You should:
 * Install Docker on your machine.
@@ -68,7 +91,8 @@ You should:
 	* genomicpariscentre/babel:0.3-0
 	* genomicpariscentre/sartools:1.3.2
 
-* Pull RiboProAnalysis image.
+* Pull this Github RiboProAnalysis package.
+
 
 ## Input files
 
@@ -81,7 +105,7 @@ The syntax to declare a variable is :
 export VARIABLE_NAME=MyVariable
 ```
 
-#### Example of configuration file for run with the Bash script
+#### Example configuration file to run with the Bash script
 ```
 export PATH_TO_RAW_UNDEMULTIPLEXED_FILE=/import/disir01/bioinfo/RiboPro/Riboprotma_project/2015_240_NoIndex_L008_R1_001.fastq
 export PATH_TO_GENOME_INDEX=/import/disir01/bioinfo/RiboPro/IndexAlignement/STAR/yeastGenomeEnsembl
@@ -102,7 +126,7 @@ export AUTHOR=User
 export REFERENCE_CONDITION=WildType
 ```
 
-#### Example of configuration file for run with Docker container
+#### Example configuration file to run with Docker container
 ```
 export USER_IDS=2747:100
 export PATH_TO_RAW_UNDEMULTIPLEXED_FILE=/home/2015_240_NoIndex_L008_R1_001.fastq
