@@ -8,9 +8,9 @@ RiboProAnalysis can be used either via a Docker image (_URL!!!_) or a standard B
 If you use FASTQ files (no demultiplexing), the extension have to be .fastq
 
 A configuration file .conf is mandatory to launch the pipeline.
-If there is no use of RNA-seq counts, a tabulated design file -named target.txt- is needed.
+Without RNA-seq count data, a tabulated design file -named target.txt- is needed.
 The user have to build rRNA and genome index files before start running the pipeline.
-If you have RNA-seq counts files they must be named: SAMPLENAME_mRNAcounts.txt for counts file and SAMPLENAME_mRNA.transcriptome.mapping.bam for mapping to transcriptome BAM files.
+If available, RNA-seq count files must be named: SAMPLENAME_mRNAcounts.txt for counts file and SAMPLENAME_mRNA.transcriptome.mapping.bam for mapping to transcriptome BAM files.
 
 ### Steps to run the pipeline
 * Build a bowtie index for rRNA sequences (use Bowtie1):
