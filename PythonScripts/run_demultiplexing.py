@@ -1,10 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-#
-#
-#
-
 import argparse
 import sys
 import os
@@ -14,11 +10,11 @@ import time
 
 #---------------------------------------------------------------------------------------
 # Generate regex
-# 
-# 
+#
+#
 #---------------------------------------------------------------------------------------
 def generate_regex(adapt) :
-	
+
 	if adapt == "":
 		print "Give your index adapter sequence."
 		sys.exit(1)
@@ -38,8 +34,8 @@ def generate_regex(adapt) :
 
 #---------------------------------------------------------------------------------------
 # Filter fastq file
-# 
-# 
+#
+#
 #---------------------------------------------------------------------------------------
 def search_and_write(inF, outF, regex):
 
@@ -59,7 +55,7 @@ def search_and_write(inF, outF, regex):
 
 	while True :
 		name = inFile.readline()
-		if not name : 
+		if not name :
 			break
 		nbReads += 1
 		if nbReads%10000000 == 0 :
@@ -84,7 +80,7 @@ def search_and_write(inF, outF, regex):
 			outFile.write(qual)
 
 
-	
+
 	inFile.close()
 	outFile.close()
 
@@ -99,8 +95,8 @@ def search_and_write(inF, outF, regex):
 
 #---------------------------------------------------------------------------------------
 # Filter fastq file
-# 
-# 
+#
+#
 #---------------------------------------------------------------------------------------
 def search_and_count(inF, regex):
 	try:
@@ -117,7 +113,7 @@ def search_and_count(inF, regex):
 
 	while True :
 		name = inFile.readline()
-		if not name : 
+		if not name :
 			break
 		nbReads += 1
 		if nbReads%10000000 == 0 :
@@ -134,7 +130,7 @@ def search_and_count(inF, regex):
 		test = motif.search(read)
 		if test :
 			nbKept += 1
-	
+
 	inFile.close()
 	perct = float(nbKept)/float(nbReads) * 100
 	perct = "{0:.2f}".format(perct)
@@ -156,7 +152,7 @@ if __name__ == "__main__":
 	outFile = args.output
 	adapter = args.adapter
 
-	if outFile != None:	
+	if outFile != None:
 		regex = generate_regex(adapter)
 		print "INFO : Starting scan of "+str(inFile)+" (expected format : FASTQ)."
 		print "DATE OF STARTING : " + str(time.strftime("%Y-%m-%d %H:%M:%S"))
