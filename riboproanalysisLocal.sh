@@ -1,16 +1,16 @@
 #!/bin/bash
 
 #########################################################################
-## 								       ##
+##                                                                     ##
 ## This script runs all steps of a Ribosome Profiling analysis         ##
-##								       ##
-## Version 1.1.0						       ##
-## Maintener : Alexandra Bomane					       ##
-##	       <alexandra.bomane@univ-paris-diderot.fr>	       	       ##
-##								       ##
+##                                                                     ##
+## Version 1.1.0                                                       ##
+## Maintener : Alexandra Bomane                                        ##
+##            <alexandra.bomane@univ-paris-diderot.fr>	               ##
+##                                                                     ##
 #########################################################################
 
-########################## Variables section #############################
+######################### Variables section #############################
 ## Environment
 
 # For debugging
@@ -96,27 +96,27 @@ then
 	fi
 fi
 
-if [ $WORKING_ANSWER_PE_RNASEQ = YES ] && [ $RNASEQ_LIBTYPE = "reversestrand" ]
+if [ "$WORKING_ANSWER_PE_RNASEQ" = YES ] && [ $RNASEQ_LIBTYPE = "reversestrand" ]
 then
 	export SALMON_LIBTYPE="ISR"
 
-elif [ $WORKING_ANSWER_PE_RNASEQ = YES ] && [ $RNASEQ_LIBTYPE = "unstranded" ]
+elif [ "$WORKING_ANSWER_PE_RNASEQ" = YES ] && [ $RNASEQ_LIBTYPE = "unstranded" ]
 then
 	export SALMON_LIBTYPE="IU"
 
-elif [ $WORKING_ANSWER_PE_RNASEQ = YES ] && [ $RNASEQ_LIBTYPE = "forwardstrand" ]
+elif [ "$WORKING_ANSWER_PE_RNASEQ" = YES ] && [ $RNASEQ_LIBTYPE = "forwardstrand" ]
 then
 	export SALMON_LIBTYPE="ISF"
 
-elif [ $WORKING_ANSWER_PE_RNASEQ = NO ] && [ $RNASEQ_LIBTYPE = "reversestrand" ]
+elif [ "$WORKING_ANSWER_PE_RNASEQ" = NO ] && [ $RNASEQ_LIBTYPE = "reversestrand" ]
 then
 	export SALMON_LIBTYPE="SR"
 
-elif [ $WORKING_ANSWER_PE_RNASEQ = NO ] && [ $RNASEQ_LIBTYPE = "unstranded" ]
+elif [ "$WORKING_ANSWER_PE_RNASEQ" = NO ] && [ $RNASEQ_LIBTYPE = "unstranded" ]
 then
 	export SALMON_LIBTYPE="U"
 
-elif [ $WORKING_ANSWER_PE_RNASEQ = NO ] && [ $RNASEQ_LIBTYPE = "forwardstrand" ]
+elif [ "$WORKING_ANSWER_PE_RNASEQ" = NO ] && [ $RNASEQ_LIBTYPE = "forwardstrand" ]
 then
 	export SALMON_LIBTYPE="SF"
 fi
@@ -128,14 +128,14 @@ fi
 #	exit 1
 #fi
 
-if [ ! $DIFFERENTIAL_ANALYSIS_PACKAGE = EDGER ] && [ ! $DIFFERENTIAL_ANALYSIS_PACKAGE = DESEQ2 ]
+if [ ! "$DIFFERENTIAL_ANALYSIS_PACKAGE" = EDGER ] && [ ! $DIFFERENTIAL_ANALYSIS_PACKAGE = DESEQ2 ]
 then
 	echo "Unavailable R package. Choose : EDGER or DESEQ2 (case sensitive)"
 	exit 1
 fi
 
 WORKING_STOP_EXEC_PSITE_CORRECTION=${STOP_EXEC_PSITE_CORRECTION^^}
-if [ ! $WORKING_STOP_EXEC_PSITE_CORRECTION = NO ] && [ ! $WORKING_STOP_EXEC_PSITE_CORRECTION = YES ]
+if [ ! "$WORKING_STOP_EXEC_PSITE_CORRECTION" = NO ] && [ ! $WORKING_STOP_EXEC_PSITE_CORRECTION = YES ]
 then
 	echo "Check your STOP_EXEC_PSITE_CORRECTION parameter. It must be YES or NO."
 	exit 1
@@ -187,16 +187,15 @@ export R_SCRIPT_ANADIFF_SARTOOLS_DESEQ2="script_DESeq2.R"
 export R_SCRIPT_ANADIFF_SARTOOLS_EDGER="script_edgeR.R"
 
 # Check mandatory parameters
-
-if [ -z $PATH_TO_rRNA_INDEX ]
-then
-	echo "Give your rRNA index path."
-	exit 1
-fi
-
 if [ -z $PATH_TO_GENOME_INDEX ]
 then
 	echo "Give your genome index path."
+	exit 1
+fi
+
+if [ -z "$PATH_TO_rRNA_INDEX" ]
+then
+	echo "Give your rRNA index path."
 	exit 1
 fi
 
