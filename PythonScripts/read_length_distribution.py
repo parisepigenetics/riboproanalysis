@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import sys
 import os
 
+# FIXME If a python script does not have functions which can be imported as a module in another program, there is no need for this __name == "__main__" trick.
+
 if __name__=='__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-i", "--input", required = True, metavar = "input.sam", help = "Alignment on SAM format as input")

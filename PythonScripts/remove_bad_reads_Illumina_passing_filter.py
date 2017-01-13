@@ -4,14 +4,16 @@ import sys
 import argparse
 import time
 
+# FIXME If a python script does not have functions which can be imported as a module in another program, there is no need for this __name == "__main__" trick.
+
 if __name__=='__main__':
-	parser = argparse.ArgumentParser()      
+	parser = argparse.ArgumentParser()
         parser.add_argument("-i", "--input", required = True, metavar = "input.fastq", help = "Fastq with bad passing filter quality")
         parser.add_argument("-o", "--output", required = True, metavar = "output.fastq", help = "Fastq without bad passing filter quality")
         args = parser.parse_args()
         FQ = args.input
         Out = args.output
-	
+
 	try:
 		fileFQ = open(FQ,"r")
 	except IOError:

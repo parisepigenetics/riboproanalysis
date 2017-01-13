@@ -4,8 +4,10 @@ import time
 import argparse
 import sys
 
+# FIXME If a python script does not have functions which can be imported as a module in another program, there is no need for this __name == "__main__" trick.
+
 if __name__=='__main__':
-	parser = argparse.ArgumentParser()      
+	parser = argparse.ArgumentParser()
         parser.add_argument("-i", "--input", required = True, metavar = "input.sam", help = "Unfiltered SAM file as input")
         parser.add_argument("-o", "--output", required = True, metavar = "output_filtered.sam", help = "Filtered SAM file as output")
 	parser.add_argument("-m", "--multireads", required = False, metavar = "output_multireads.sam", help = "SAM file with multi-reads as output")
@@ -25,13 +27,13 @@ if __name__=='__main__':
 	print "DATE OF THE STARTING : " + str(time.strftime("%Y-%m-%d %H:%M:%S"))
 
 	entree = sys.stdin
-	
+
 	entry_1 = ""
 	id_1 = ""
 
 	entry_2 = entree.readline()
 	id_2 = entry_2.strip().split("\t")[0]
-	
+
 	nbLine = 1
 	nbUniq = 0
 	nbMulti = 0
@@ -83,7 +85,7 @@ if __name__=='__main__':
 			if writeMulti:
 				outMulti.write(entry_2)
 			nbMulti += 1
-		
+
 		id_1 = id_2
 		entry_1 = entry_2
 
