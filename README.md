@@ -1,16 +1,16 @@
 # RiboProAnalysis
 
-**RiboProAnalysis** is a pipeline for Ribosome Profiling analysis af any eukaryotic genome from Ensembl 75+.
-It performs all the neccessry pre-processing steps (quality control, filtering, trimming and size selection), reads mapping to rRNA and reference genome, counting on CDS for each gene and differential analysis from raw Ribosome Profiling data.
+**RiboProAnalysis** is a pipeline for Ribosome Profiling analysis af any eukaryotic genome from Ensembl 75+ or later.
+It performs all the necessary pre-processing steps (quality control, filtering, trimming and size selection), filter reads mapped to rRNA, map to reference genome, counting on CDS for each gene and differential analysis from raw Ribosome Profiling data.
 
 ## Usage
-RiboProAnalysis can be used either via a Docker image (_URL!!!_) or a standard Bash script with several cases: it can performs demultiplexing on multiplexed FASTQ (reads MUST begin with the index sequence) and use of RNA-seq counts to give a study of the mode of regulation of the translation.
+RiboProAnalysis can be used either via a Docker image (_URL!!!_) or a standard Bash script with several options. It can be used to perform demultiplexing on multiplexed FASTQ (reads MUST begin with the index sequence). Availability of RNA-seq count data allows comparison of transcript abundance with riboseq counts, providing a proxy to analyse the regulation level during differential analysis.
 If you use FASTQ files (no demultiplexing), the extension have to be .fastq
 
 A configuration file .conf is mandatory to launch the pipeline.
-If there is no use of RNA-seq counts, a tabulated design file -named target.txt- is needed.
+Without RNA-seq count data, a tabulated design file -named target.txt- is needed.
 The user have to build rRNA and genome index files before start running the pipeline.
-If you have RNA-seq counts files they must be named: SAMPLENAME_mRNAcounts.txt for counts file and SAMPLENAME_mRNA.transcriptome.mapping.bam for mapping to transcriptome BAM files.
+If available, RNA-seq count files must be named: SAMPLENAME_mRNAcounts.txt for counts file and SAMPLENAME_mRNA.transcriptome.mapping.bam for mapping to transcriptome BAM files.
 
 ### Steps to run the pipeline
 * Build a bowtie index for rRNA sequences (use Bowtie1):
