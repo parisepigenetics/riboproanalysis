@@ -3,6 +3,8 @@
 # Based on jpetazzo/dind
 ############################################################
 
+#TODO this way is obsolete now... there is an official DockerInDocker image, we can pull it from DockerHub and to our job with that.
+
 # Set the base image to Dind
 FROM jpetazzo/dind
 
