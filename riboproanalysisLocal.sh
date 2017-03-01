@@ -513,22 +513,10 @@ removeBadIQF() {
 }
 
 
-<<<<<<< HEAD
-        fastqc -o $1 $2
-
-				#docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/fastqc:0.11.5 -o $1 $2
-
-				if [ $? -ne 0 ]
-				then
-					echo "FastQC cannot run correctly !"
-					exit 1
-				fi
-=======
 # Check remove bad passing filter
 removeBadIQF_report() {
   RM_BADIQF_DIR="$1_rmIQF_report"
   RM_IQF_INPUT="$1_rmIQF.fastq"
->>>>>>> 69678de8d9e758943f51c894cd4cec127893deb1
 
   if [ -s $RM_IQF_INPUT ]
   then
