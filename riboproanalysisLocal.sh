@@ -442,7 +442,9 @@ fastqc_quality_control()
 			fi
 				echo "Starting of FastQC :"
 
-				docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/fastqc:0.11.5 -o $1 $2
+        fastqc -o $1 $2
+
+				#docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/fastqc:0.11.5 -o $1 $2
 
 				if [ $? -ne 0 ]
 				then
