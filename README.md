@@ -90,6 +90,9 @@ You should:
 	* genomicpariscentre/htseq:0.6.1p1
 	* genomicpariscentre/babel:0.3-0
 	* genomicpariscentre/sartools:1.3.2
+	* genomicpariscentre/bcbio-nextgen:1.0.0a0
+	* parisepigenetics/plastid:0.4.6
+	* genomicpariscentre/ribomap:1.2
 
 * Pull this Github RiboProAnalysis package.
 
