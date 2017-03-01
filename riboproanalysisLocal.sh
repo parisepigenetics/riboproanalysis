@@ -324,17 +324,18 @@ if [ ! $WORKING_CHECK_DOCKER_IMAGES = NO ]
 then
   if [ $WORKING_CHECK_DOCKER_IMAGES = YES ]
   then
-    docker pull genomicpariscentre/fastqc
-    docker pull genomicpariscentre/cutadapt
-    docker pull genomicpariscentre/bowtie
-    docker pull genomicpariscentre/star
-    docker pull genomicpariscentre/samtools
-    docker pull genomicpariscentre/gff3-ptools
-    docker pull genomicpariscentre/htseq
-    docker pull genomicpariscentre/babel
-    docker pull genomicpariscentre/sartools
-    docker pull genomicpariscentre/bcbio-nextgen
-    docker pull parisepigenetics/plastid
+    docker pull genomicpariscentre/fastqc:0.11.5
+    docker pull genomicpariscentre/cutadapt:1.8.3
+    docker pull genomicpariscentre/bowtie:1.1.1
+    docker pull genomicpariscentre/star:2.5.1b
+    docker pull genomicpariscentre/samtools:0.1.19
+    docker pull genomicpariscentre/gff3-ptools:0.4.0
+    docker pull genomicpariscentre/htseq:0.6.1p1
+    docker pull genomicpariscentre/babel:0.3-0
+    docker pull genomicpariscentre/sartools:1.3.2
+    docker pull genomicpariscentre/bcbio-nextgen:1.0.0a0
+    docker pull parisepigenetics/plastid:0.4.6
+    docker pull genomicpariscentre/ribomap:1.2
 #    docker pull parisepigenetics/riboseqr  TODO Integrate RiboSeqR
 #    docker pull parisepigenetics/umitools  TODO Integrate Umitools
   else
@@ -442,8 +443,8 @@ fastqc_quality_control() {
       error_exit "$LINENO: An error has occurred."
     fi
       echo "Running FastQC..."
-        echo docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/fastqc -o $1 $2
-        docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/fastqc -o $1 $2
+        echo docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/fastqc:0.11.5 -o $1 $2
+        docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/fastqc:0.11.5 -o $1 $2
       if [ $? -ne 0 ]
       then
         echo "FastQC cannot run correctly ! $@"
