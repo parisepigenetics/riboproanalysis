@@ -1,48 +1,29 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
 
-import matplotlib
-matplotlib.use('Agg')
+'''Python script to generate a histogram plot from a single column integer number file (or STDIN).'''
+
 import argparse
+import numpy as np
 import matplotlib.pyplot as plt
 import sys
 import os
 
-# FIXME If a python script does not have functions which can be imported as a module in another program, there is no need for this __name == "__main__" trick.
+parser = argparse.ArgumentParser()
+parser.add_argument("input", nargs = "?", help = "Input single column number file, or empty for STDIN", default = sys.stdin)
+parser.add_argument("output", help = "Read length distribution figure.")
+parser.add_argument("-e", "--experiment", dest = "experiment", help = "A sigle word describing the experiment.", required = True)
+args = parser.parse_args()
 
-if __name__=='__main__':
-	parser = argparse.ArgumentParser()
-	parser.add_argument("-i", "--input", required = True, metavar = "input.sam", help = "Alignment on SAM format as input")
-	parser.add_argument("-o", "--output", required = True, metavar = "output.png", help = "Read length distribution picture as output")
-	args = parser.parse_args()
+# Directly read the data.
+readLenghts = np.loadtxt(args.input, dtype = int)
 
-	if os.path.exists(args.input):
-		inPut = args.input
-	else:
-		print "No such file : " + args.input
-		sys.exit(1)
+nBins = max(readLenghts) - min(readLenghts)
 
-	graphOutputName = args.output
+plt.hist(readLenghts, bins = nBins)
 
-	reads_lgts = []
-	entree = sys.stdin
-
-	for line in entree:
-		reads_lgts.append(int(line.strip()))
-
-	L = max(reads_lgts) - min(reads_lgts)
-
-	if L == 0:
-		L = 1
-
-	plt.hist(reads_lgts, histtype='bar', facecolor='b', bins = L)
-
-	title = 'Reads length distribution from ' + inPut
-	Xlabel = 'Length' + '\n' + 'Bins = ' + str(L)
-
-	plt.title(title)
-	plt.xlabel(Xlabel)
-	plt.ylabel('Number of reads')
-	plt.grid(True)
-	plt.xlim(min(reads_lgts), max(reads_lgts) + 5)
-	plt.savefig(graphOutputName)
+plt.title('Reads length distribution from ' + args.experiment)
+plt.xlabel("Read lengths")
+plt.ylabel('Number of reads')
+plt.grid(True)
+plt.xlim(min(readLenghts) - 1, max(readLenghts) + 1)
+plt.savefig(args.output)
