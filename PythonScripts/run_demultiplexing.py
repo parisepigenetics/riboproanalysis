@@ -11,14 +11,11 @@ import time
 #---------------------------------------------------------------------------------------
 # Generate regex
 #
-#
 #---------------------------------------------------------------------------------------
 def generate_regex(adapt) :
-
 	if adapt == "":
 		print "Give your index adapter sequence."
 		sys.exit(1)
-
 	regex = "^"	# à modifier si l'adapt n'est pas au début
 	print "WARNING : read must BEGIN with the adapter"
 	for char in adapt :
@@ -28,31 +25,23 @@ def generate_regex(adapt) :
 			regex += "\w"
 		else : # à compléter si besoin particuliers
 			regex += "."
-
 	print "INFO : the tested regex will be : "+str(regex)
 	return regex
 
 #---------------------------------------------------------------------------------------
 # Filter fastq file
 #
-#
 #---------------------------------------------------------------------------------------
 def search_and_write(inF, outF, regex):
-
 	try:
 		inFile = open(inF, 'r')
-
 	except IOError:
 		print "No such file or directory : " + inF
 		sys.exit(1)
-
 	outFile = open(outF, 'w')
-
 	nbReads = 0
 	nbKept = 0
-
 	motif = re.compile(regex)
-
 	while True :
 		name = inFile.readline()
 		if not name :
@@ -60,57 +49,41 @@ def search_and_write(inF, outF, regex):
 		nbReads += 1
 		if nbReads%10000000 == 0 :
 			print "COUNT : "+str(nbKept)+" reads kept ("+str(nbReads)+" total)."
-
 		read = inFile.readline()
 		strangeThirdLine = inFile.readline()
 		qual = inFile.readline()
-
 		if not read or not strangeThirdLine or not qual :
 			print "WARNING : fastq file ended at an unexpected line. Please check your file !"
 			break
-
 		test = motif.search(read)
-
-
 		if test :
 			nbKept += 1
 			outFile.write(name)
 			outFile.write(read)
 			outFile.write(strangeThirdLine)
 			outFile.write(qual)
-
-
-
 	inFile.close()
 	outFile.close()
-
 	perct = float(nbKept)/float(nbReads) * 100
 	perct = "{0:.2f}".format(perct)
 	print "TOTAL COUNT : "+str(nbKept)+" reads matched from "+str(nbReads)+" total ("+str(perct)+"%)."
 	print "INFO : matching reads have been written to "+str(outF)+" in FASTQ format."
-
-
-	return
+#	return
 
 
 #---------------------------------------------------------------------------------------
 # Filter fastq file
 #
-#
 #---------------------------------------------------------------------------------------
 def search_and_count(inF, regex):
 	try:
 		inFile = open(inF, 'r')
-
 	except IOError:
 		print "No such file or directory : " + inF
 		sys.exit(1)
-
 	nbReads = 0
 	nbKept = 0
-
 	motif = re.compile(regex)
-
 	while True :
 		name = inFile.readline()
 		if not name :
@@ -118,20 +91,15 @@ def search_and_count(inF, regex):
 		nbReads += 1
 		if nbReads%10000000 == 0 :
 			print "COUNT : "+str(nbKept)+" reads kept ("+str(nbReads)+" scanned)."
-
 		read = inFile.readline()
 		strangeThirdLine = inFile.readline()
 		qual = inFile.readline()
-
 		if not read or not strangeThirdLine or not qual :
 			print "WARNING : fastq file ended at an unexpected line. Please check your file !"
 			break
-
 		test = motif.search(read)
 		if test :
-			nbKept += 1
-
-	inFile.close()
+			nbKept += outF
 	perct = float(nbKept)/float(nbReads) * 100
 	perct = "{0:.2f}".format(perct)
 	print "TOTAL COUNT : "+str(nbKept)+" reads matched from "+str(nbReads)+" total ("+str(perct)+"%)."
@@ -140,7 +108,6 @@ def search_and_count(inF, regex):
 #################################################################################
 # MAIN
 #################################################################################
-
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-i", "--input", required = True, metavar = "input_multiplexing.fastq", help = "Fastq file with multiplexed reads")
@@ -161,7 +128,6 @@ if __name__ == "__main__":
 	else:
 		print " "
 		print "WARNING : No output specified - COUNT ONLY mode."
-
 		regex = generate_regex(adapter)
 		print "INFO : Starting scan of "+str(inFile)+" (expected format : FASTQ)."
 		print "DATE OF STARTING : " + str(time.strftime("%Y-%m-%d %H:%M:%S"))
