@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -ex
 
 #######################################################################
 ## The main bash script to run the ribosome profile pipeline.        ##
@@ -8,7 +8,8 @@
 ##            <alexandra.bomane@laposte.fr>                          ##
 ## Maintainer: Costas Bouyioukos                                     ##
 ##      email: costas.bouyioukos@univ-paris-diderot.fr               ##
-## Developed in the PTER team at UMR7216, 2016-17                    ##
+## Developed in the PTER team at UMR7216, 2016-18                    ##
+## This program is a free software released under the GNU GPL v. 3   ##
 #######################################################################
 
 ######################### Variables section ###########################
@@ -17,12 +18,11 @@
 # For debugging
 #set -xv
 # Allow to stop the program after an error, BUT doesn't display the error
-#set -e
+# TODO fix this, display the error. Look at the shebang line.
 
 #### TODO
 # Integrate parameter CASAVA_VERSION --> if 1.8 --> Run remove bad IQF (Illumina Qiality Filter) ; if not 1.8 --> DON'T run remove bad IQF (Illumina Qiality Filter)
 # Integrate parameter ANSWER_SPLICING_JUNCTIONS --> if YES let the STAR command line for mapping has it is ; if NO --> DON'T do splcing using --alignIntronMax 1 parameter of STAR
-
 
 # Working directory
 export WORKDIR=$(pwd)
@@ -159,6 +159,7 @@ export TMPDIR=$(readlink -f tmp/)
 
 
 # Muti-mapped reads analysis directory
+# TODO we will probably not include that in the final script.
 if [ ! -e multi_reads_analysis/ ]
 then
   mkdir -p multi_reads_analysis/
@@ -175,7 +176,7 @@ export CANONICAL_PATH=$(dirname $MAIN_SCRIPT_CANONICAL_PATH)
 export PYTHON_SCRIPTS_PATH="${CANONICAL_PATH}/PythonScripts/"
 export R_SCRIPTS_PATH="${CANONICAL_PATH}/RScripts/"
 
-#TODO probably there is NO NEED to have all these parameters as individual parmas. A call of the name of the script from the containing directory will be enough!
+#TODO probably there is NO NEED to have all these parameters as individual params. A call of the name of the script from the containing directory will be enough!
 # Python scripts
 export PYTHON_SCRIPT_DEMULTIPLEXING="run_demultiplexing.py"
 export PYTHON_SCRIPT_REMOVE_PCR_DUP="rmDupPCR.py"
@@ -205,6 +206,7 @@ then
 fi
 
 if [ -z "$PATH_TO_rRNA_INDEX" ]
+# TODO check if we really need to do that also.
 then
   echo "Give your rRNA index path."
   error_exit "$LINENO: An error has occurred."
@@ -284,7 +286,7 @@ fi
 
 export WORKING_SAMPLE_INDEX_ARRAY=$(echo ${SAMPLE_INDEX_ARRAY[*]})
 
-export SAMPLES=($(echo ${SAMPLE_ARRAY[@]%.fastq})) ## TODO No need because handling by GNU parallel
+export SAMPLES=($(echo ${SAMPLE_ARRAY[@]%.fastq})) ## TODO No need because handling by GNU parallel (FIXME NO prtobably I made a wrong comment here.)
 
 #WORKING_CONDITION_ARRAY=$(echo ${CONDITION_ARRAY[*]})
 export WORKING_CONDITION_ARRAY=$(echo ${CONDITION_ARRAY[*]})
@@ -319,23 +321,25 @@ fi
 
 
 # Check Docker images
+# TODO UPDATE ALL docker images and make them all available from PAris Epigenetics.
 export WORKING_CHECK_DOCKER_IMAGES=${CHECK_DOCKER_IMAGES^^}
 if [ ! $WORKING_CHECK_DOCKER_IMAGES = NO ]
 then
   if [ $WORKING_CHECK_DOCKER_IMAGES = YES ]
   then
-    docker pull genomicpariscentre/fastqc:0.11.5
-    docker pull genomicpariscentre/cutadapt:1.8.3
-    docker pull genomicpariscentre/bowtie:1.1.1
-    docker pull genomicpariscentre/star:2.5.1b
-    docker pull genomicpariscentre/samtools:0.1.19
-    docker pull genomicpariscentre/gff3-ptools:0.4.0
-    docker pull genomicpariscentre/htseq:0.6.1p1
-    docker pull genomicpariscentre/babel:0.3-0
-    docker pull genomicpariscentre/sartools:1.3.2
-    docker pull genomicpariscentre/bcbio-nextgen:1.0.0a0
-    docker pull parisepigenetics/plastid:0.4.6
-    docker pull genomicpariscentre/ribomap:1.2
+    docker pull genomicpariscentre/fastqc
+    docker pull genomicpariscentre/cutadapt
+    docker pull genomicpariscentre/bowtie
+    docker pull genomicpariscentre/star
+    docker pull genomicpariscentre/samtools
+    docker pull genomicpariscentre/gff3-ptools
+    docker pull genomicpariscentre/htseq
+    docker pull genomicpariscentre/babel
+    docker pull genomicpariscentre/sartools
+    docker pull genomicpariscentre/ribomap
+#    docker pull genomicpariscentre/bcbio-nextgen
+    docker pull parisepigenetics/bcbio-nextgen
+    docker pull parisepigenetics/plastid
 #    docker pull parisepigenetics/riboseqr  TODO Integrate RiboSeqR
 #    docker pull parisepigenetics/umitools  TODO Integrate Umitools
   else
@@ -443,8 +447,8 @@ fastqc_quality_control() {
       error_exit "$LINENO: An error has occurred."
     fi
       echo "Running FastQC..."
-        echo docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/fastqc:0.11.5 -o $1 $2
-        docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/fastqc:0.11.5 -o $1 $2
+        echo docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/fastqc -o $1 $2
+        docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/fastqc -o $1 $2
       if [ $? -ne 0 ]
       then
         echo "FastQC cannot run correctly ! $@"
@@ -548,7 +552,7 @@ removePCRduplicates() {
       else
         echo "Removing PCR duplicates :"
 
-        awk '{ i=(NR-1) % 4; tab[i]=$0 ; if (i==3) { print tab[1]"\t"tab[0]"\t"tab[3]"\t"tab[2]} }' $RM_PCRDUP_INPUT | sort -T $TMPDIR | $PYTHON_SCRIPTS_PATH$PYTHON_SCRIPT_REMOVE_PCR_DUP -i $RM_PCRDUP_INPUT -o $RM_PCRDUP_OUTPUT > $LOGFILE
+        awk '{ i=(NR-1) % 4; tab[i]=$0 ; if (i==3) { print tab[1]"\t"tab[0]"\t"tab[3]"\t"tab[2]} }' $RM_PCRDUP_INPUT | sort | $PYTHON_SCRIPTS_PATH$PYTHON_SCRIPT_REMOVE_PCR_DUP $RM_PCRDUP_OUTPUT > $LOGFILE
 
         if [ ! -s $RM_PCRDUP_OUTPUT ]
         then
@@ -596,7 +600,7 @@ index_Adapter_trimming() {
 
       echo "Index adapter trimming :"
 
-      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/cutadapt:1.8.3 bash -c "cutadapt -u $INDEX_LENGTH -o $INDEX_TRIM_OUTPUT $INDEX_TRIM_INPUT" > $LOGFILE
+      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/cutadapt bash -c "cutadapt -u $INDEX_LENGTH -o $INDEX_TRIM_OUTPUT $INDEX_TRIM_INPUT" > $LOGFILE
 
       if [ ! -s $INDEX_TRIM_OUTPUT ]
       then
@@ -662,9 +666,9 @@ threePrime_trimming() {
 
     if [ $WORKING_ANSWER_REMOVE_POLYN_READS = "YES" ]
     then
-      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/cutadapt:1.8.3 bash -c "cutadapt -a $2 --discard-untrimmed --max-n $FILTER_MAX_N -o $THREEPRIME_TRIM_OUTPUT $THREEPRIME_TRIM_INPUT > $LOGFILE"
+      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/cutadapt bash -c "cutadapt -a $2 --discard-untrimmed --max-n $FILTER_MAX_N -o $THREEPRIME_TRIM_OUTPUT $THREEPRIME_TRIM_INPUT > $LOGFILE"
     else
-      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/cutadapt:1.8.3 bash -c "cutadapt -a $2 --discard-untrimmed -o $THREEPRIME_TRIM_OUTPUT $THREEPRIME_TRIM_INPUT > $LOGFILE"
+      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/cutadapt bash -c "cutadapt -a $2 --discard-untrimmed -o $THREEPRIME_TRIM_OUTPUT $THREEPRIME_TRIM_INPUT > $LOGFILE"
     fi
 
     if [ $? -ne 0 ]
@@ -717,7 +721,7 @@ size_Selection() {
   else
     echo "Size selection :"
 
-    docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/cutadapt:1.8.3 bash -c "cutadapt -m $MIN_READ_LENGTH -M $MAX_READ_LENGTH -o $SIZE_SELECT_OUTPUT $THREEPRIME_TRIM_INPUT > $LOGFILE"
+    docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/cutadapt bash -c "cutadapt -m $MIN_READ_LENGTH -M $MAX_READ_LENGTH -o $SIZE_SELECT_OUTPUT $THREEPRIME_TRIM_INPUT > $LOGFILE"
 
     if [ $? -ne 0 ]
     then
@@ -762,7 +766,7 @@ collapse_step_seqcluster() {
 
     if [ -s $FASTQ_CLEAN_INPUT ]
     then
-      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v /etc/passwd:/etc/passwd -v ${WORKDIR}:/home -w /home genomicpariscentre/bcbio-nextgen:1.0.0a0 bash -c "/usr/local/bin/seqcluster collapse -f $FASTQ_CLEAN_INPUT -o $DIR_COLLAPSE_OUTPUT"
+      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v /etc/passwd:/etc/passwd -v ${WORKDIR}:/home -w /home genomicpariscentre/bcbio-nextgen bash -c "/usr/local/bin/seqcluster collapse -f $FASTQ_CLEAN_INPUT -o $DIR_COLLAPSE_OUTPUT"
 
       if [ $? -ne 0 ]
       then
@@ -813,7 +817,7 @@ prepareSamples_step_seqcluster() {
       echo -e "multi_reads_analysis/${SAMPLE}_collapseStep/${SAMPLE}_SizeSelection_collapsed.fastq"\\t$SAMPLE >> seqclusterPrepareConfiguration.txt
     done
 
-    docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v /etc/passwd:/etc/passwd -v ${WORKDIR}:/home -w /home genomicpariscentre/bcbio-nextgen:1.0.0a0 bash -c "/usr/local/bin/seqcluster prepare -c seqclusterPrepareConfiguration.txt -o $DIR_PREPARE_SAMPLES_OUTPUT --minc $MIN_COUNT --minl $MIN_SIZE --maxl $MAX_SIZE --min-shared $MIN_SHARED"
+    docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v /etc/passwd:/etc/passwd -v ${WORKDIR}:/home -w /home genomicpariscentre/bcbio-nextgen bash -c "/usr/local/bin/seqcluster prepare -c seqclusterPrepareConfiguration.txt -o $DIR_PREPARE_SAMPLES_OUTPUT --minc $MIN_COUNT --minl $MIN_SIZE --maxl $MAX_SIZE --min-shared $MIN_SHARED"
 
     if [ $? -ne 0 ]
     then
@@ -856,7 +860,7 @@ align_To_R_RNA() {
       echo "Mapping to rRNA already done for $sample"
       #return 0
     else
-      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home -v $PATH_TO_rRNA_INDEX:/root genomicpariscentre/bowtie1:1.1.1 bash -c "bowtie -p $(nproc) $BOWTIE_OPTIONS $UNMAPPED_RNA_FASTQ_FILE /root/$rRNA_INDEX_BASENAME $INPUT_RNA_MAPPING $MAPPED_RNA_SAM_FILE 2> $LOGFILE_BOWTIE"
+      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home -v $PATH_TO_rRNA_INDEX:/root genomicpariscentre/bowtie1 bash -c "bowtie -p $(nproc) $BOWTIE_OPTIONS $UNMAPPED_RNA_FASTQ_FILE /root/$rRNA_INDEX_BASENAME $INPUT_RNA_MAPPING $MAPPED_RNA_SAM_FILE 2> $LOGFILE_BOWTIE"
 
       if [ $? -ne 0 ]
       then
@@ -913,7 +917,7 @@ align_To_R_RNA_seqcluster() {
 
     mkdir -p $DIR_RNA_MAPPING
 
-    docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home -v $PATH_TO_rRNA_INDEX:/root genomicpariscentre/bowtie1:1.1.1 bash -c "bowtie -p $(nproc) $BOWTIE_OPTIONS $UNMAPPED_RNA_FASTQ_FILE /root/$rRNA_INDEX_BASENAME $INPUT_RNA_MAPPING $MAPPED_RNA_SAM_FILE 2> $LOGFILE"
+    docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home -v $PATH_TO_rRNA_INDEX:/root genomicpariscentre/bowtie1 bash -c "bowtie -p $(nproc) $BOWTIE_OPTIONS $UNMAPPED_RNA_FASTQ_FILE /root/$rRNA_INDEX_BASENAME $INPUT_RNA_MAPPING $MAPPED_RNA_SAM_FILE 2> $LOGFILE"
 
     if [ $? -ne 0 ]
     then
@@ -944,25 +948,25 @@ align_To_R_RNA_seqcluster() {
 
 # We run the Python library matplotlib TODO ... no it does not seem to do this...
 mapped_to_R_RNA_distrib_length() {
-  DISTR_LGT_PNG="$1_mapped_to_rRNA_read_length_distribution.png"
   INPUT_SAM_MAPPED_RNA="$1_rRNA_mapped.sam"
+  DISTR_LGT_PDF="$1_mapped2rRNA_read_length_distribution.pdf"
 
-  if [ -s $DISTR_LGT_PNG ]
+  if [ -s $DISTR_LGT_PDF ]
   then
     return 0
   else
-    echo "Computing mapped to rRNA reads length distribution :"
+    echo "Computing mapped to rRNA reads length distribution..."
 
-    grep -v '^@' $INPUT_SAM_MAPPED_RNA | awk '$2 != 4 {print $0}' | awk '{print length($10)}' | $PYTHON_SCRIPTS_PATH$PYTHON_SCRIPT_READ_LENGTH_DISTRIBUTION -i $INPUT_SAM_MAPPED_RNA -o $DISTR_LGT_PNG
+    grep -v '^@' $INPUT_SAM_MAPPED_RNA | awk '{print length($10)}' | $PYTHON_SCRIPTS_PATH$PYTHON_SCRIPT_READ_LENGTH_DISTRIBUTION $DISTR_LGT_PDF -e $INPUT_SAM_MAPPED_RNA
 
-    if [ ! -s $DISTR_LGT_PNG ]
+    if [ ! -s $DISTR_LGT_PDF ]
     then
-      echo "Cannot computing mapped to rRNA reads length distribution !"
+      echo "Cannot compute mapped to rRNA reads length distribution !"
       error_exit "$LINENO: An error has occurred."
     fi
 
-    echo "PNG file : $DISTR_LGT_PNG generated"
-    echo "End of computing mapped to rRNA reads length distribution."
+    echo "PDF file : $DISTR_LGT_PDF generated"
+    echo "End of mapping to rRNA reads length distribution."
   fi
 }
 
@@ -971,7 +975,7 @@ mapped_to_R_RNA_distrib_length() {
 align_to_ref_genome() {
   for sample in ${SAMPLE_ARRAY[*]}
   do
-    echo "Starting of mapping to reference genome :"
+    echo "Start mapping to reference genome :"
 
     WORKING_ANSWER_DEMULTIPLEXING=${ANSWER_DEMULTIPLEXING^^}
 
@@ -1001,7 +1005,7 @@ align_to_ref_genome() {
         error_exit "$LINENO: An error has occurred."
       fi
 
-      docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -v $PATH_TO_GENOME_INDEX:/root -w /home genomicpariscentre/star:2.5.1b bash -c "STAR --runThreadN $(nproc) --genomeDir /root --readFilesIn $INPUT_ALIGN_GENOME --outFileNamePrefix $DIR_ALIGN_STAR --outSAMunmapped Within --outFilterMismatchNmax $MAX_ALLOWED_MISMATCHES --quantMode TranscriptomeSAM --seedSearchStartLmax $SEED_SEARCH_POINT --outFilterScoreMinOverLread $FILTER_SCORE_MIN --outFilterMatchNminOverLread $FILTER_MATCH_MIN --winAnchorMultimapNmax $MAX_LOCI_ALLOWED --outFilterMultimapScoreRange $MULTIMAP_SCORE_RANGE"
+      docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -v $PATH_TO_GENOME_INDEX:/root -w /home genomicpariscentre/star bash -c "STAR --runThreadN $(nproc) --genomeDir /root --readFilesIn $INPUT_ALIGN_GENOME --outFileNamePrefix $DIR_ALIGN_STAR --outSAMunmapped Within --outFilterMismatchNmax $MAX_ALLOWED_MISMATCHES --quantMode TranscriptomeSAM --seedSearchStartLmax $SEED_SEARCH_POINT --outFilterScoreMinOverLread $FILTER_SCORE_MIN --outFilterMatchNminOverLread $FILTER_MATCH_MIN --winAnchorMultimapNmax $MAX_LOCI_ALLOWED --outFilterMultimapScoreRange $MULTIMAP_SCORE_RANGE"
 
       if [ ! -s "${DIR_ALIGN_STAR}Aligned.out.sam" ]
       then
@@ -1094,7 +1098,7 @@ align_to_ref_genome_seqcluster() {
     echo "Mapping to reference genome for multi-mapped reads analysis already done."
     return 0
   else
-    docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -v $PATH_TO_GENOME_INDEX:/root -w /home genomicpariscentre/star:2.5.1b bash -c "STAR --runThreadN $(nproc) --genomeDir /root --readFilesIn $INPUT_MAPPING_GENOME --outSAMunmapped Within --outFilterMismatchNmax $MAX_ALLOWED_MISMATCHES  --seedSearchStartLmax $SEED_SEARCH_POINT --outFilterScoreMinOverLread $FILTER_SCORE_MIN --outFilterMatchNminOverLread $FILTER_MATCH_MIN --winAnchorMultimapNmax $MAX_LOCI_ALLOWED --outFilterMultimapScoreRange $MULTIMAP_SCORE_RANGE --outFilterMultimapNmax $MULTIMAP_N_MAX --outFileNamePrefix $DIR_MAPPING_GENOME"
+    docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -v $PATH_TO_GENOME_INDEX:/root -w /home genomicpariscentre/star bash -c "STAR --runThreadN $(nproc) --genomeDir /root --readFilesIn $INPUT_MAPPING_GENOME --outSAMunmapped Within --outFilterMismatchNmax $MAX_ALLOWED_MISMATCHES  --seedSearchStartLmax $SEED_SEARCH_POINT --outFilterScoreMinOverLread $FILTER_SCORE_MIN --outFilterMatchNminOverLread $FILTER_MATCH_MIN --winAnchorMultimapNmax $MAX_LOCI_ALLOWED --outFilterMultimapScoreRange $MULTIMAP_SCORE_RANGE --outFilterMultimapNmax $MULTIMAP_N_MAX --outFileNamePrefix $DIR_MAPPING_GENOME"
 
     if [ $? -ne 0 ]
     then
@@ -1152,24 +1156,24 @@ samFiltering() {
 # Compute the reads length distribution after alignment to the reference genome and the SAM file filtering (uniquely mapped only)
 mapped_to_genome_distrib_length() {
   SAM_FILTERED_INPUT="$1_align_filtered.sam"
-  DISTR_LGT_PNG="$1_uniquely_mapped_to_genome_read_length_distribution.png"
+  DISTR_LGT_PDF="$1_uniquely_mapped2genome_read_length_distribution.pdf"
 
-  if [ -s $DISTR_LGT_PNG ]
+  if [ -s $DISTR_LGT_PDF ]
   then
     echo "Computing uniquely mapped to genome reads length distribution already done."
     return 0
   else
     echo "Computing uniquely mapped to genome reads length distribution :"
 
-    grep -v '^@' $SAM_FILTERED_INPUT | awk '{print length($10)}' | $PYTHON_SCRIPTS_PATH$PYTHON_SCRIPT_READ_LENGTH_DISTRIBUTION -i $SAM_FILTERED_INPUT -o $DISTR_LGT_PNG
+    grep -v '^@' $SAM_FILTERED_INPUT | awk '{print length($10)}' | $PYTHON_SCRIPTS_PATH$PYTHON_SCRIPT_READ_LENGTH_DISTRIBUTION $DISTR_LGT_PDF -e $SAM_FILTERED_INPUT
 
-    if [ ! -s $DISTR_LGT_PNG ]
+    if [ ! -s $DISTR_LGT_PDF ]
     then
       echo "Cannot compute uniquely mapped to genome reads length distribution !"
       error_exit "$LINENO: An error has occurred."
     fi
 
-    echo "PNG file : $DISTR_LGT_PNG generated."
+    echo "PDF file : $DISTR_LGT_PDF generated."
     echo "End of computing uniquely mapped to genome reads length distribution."
   fi
 }
@@ -1183,25 +1187,25 @@ multimapped_to_genome_distrib_length() {
   if [ $WORKING_ANSWER_KEEP_MULTIREAD = YES ]
   then
     SAM_MULTIREAD_INPUT="$1_align_multi.sam"
-    DISTR_LGT_PNG="$1_multimapped_to_genome_read_length_distribution.png"
+    DISTR_LGT_PDF="$1_multimapped_to_genome_read_length_distribution.pdf"
 
-    if [ -s $DISTR_LGT_PNG ]
+    if [ -s $DISTR_LGT_PDF ]
     then
       echo "Computing multi-mapped to genome reads length distribution already done."
       return 0
     else
       echo "Computing multi-mapped to genome reads length distribution :"
 
-      grep -v '^@' $SAM_MULTIREAD_INPUT | awk '{print length($10)}' | $PYTHON_SCRIPTS_PATH$PYTHON_SCRIPT_READ_LENGTH_DISTRIBUTION -i $SAM_MULTIREAD_INPUT -o $DISTR_LGT_PNG
+      grep -v '^@' $SAM_MULTIREAD_INPUT | awk '{print length($10)}' | $PYTHON_SCRIPTS_PATH$PYTHON_SCRIPT_READ_LENGTH_DISTRIBUTION $DISTR_LGT_PDF -e $SAM_MULTIREAD_INPUT
 
-      if [ ! -s $DISTR_LGT_PNG ]
+      if [ ! -s $DISTR_LGT_PDF ]
       then
         echo "Cannot compute multi-mapped to genome reads length distribution !"
         error_exit "$LINENO: An error has occurred."
       fi
     fi
 
-    echo "PNG file : $DISTR_LGT_PNG generated."
+    echo "PDF file : $DISTR_LGT_PDF generated."
     echo "End of computing multi-mapped to genome reads length distribution."
   else
     return 0
@@ -1223,9 +1227,9 @@ sam_to_bam() {
       echo "Starting of Samtools"
 
       # SAM to BAM conversion + sorting of BAM file
-      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/samtools:0.1.19 bash -c "samtools view -Sb $FILTERED_SAM | samtools sort - $FILTERED_SORTED_ALIGNMENT"
+      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/samtools bash -c "samtools view -Sb $FILTERED_SAM | samtools sort - $FILTERED_SORTED_ALIGNMENT"
       # Index BAI
-      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/samtools:0.1.19 bash -c "samtools index "${FILTERED_SORTED_ALIGNMENT}.bam" "${FILTERED_SORTED_ALIGNMENT}.bai""
+      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/samtools bash -c "samtools index "${FILTERED_SORTED_ALIGNMENT}.bam" "${FILTERED_SORTED_ALIGNMENT}.bai""
 
       if [ ! -s "${FILTERED_SORTED_ALIGNMENT}.bam" ]
       then
@@ -1373,7 +1377,7 @@ rna_seq_quantification() {
           error_exit "$LINENO: An error has occurred."
         fi
 
-        docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home -v "${PATH_TO_REFERENCE_TRANSCRIPTOME_FILE}:/run/${TRANSCRIPTOME_FASTA_FILE}" genomicpariscentre/ribomap:1.2 bash -c "salmon quant -t /run/${TRANSCRIPTOME_FASTA_FILE} -l $2 -a $RNA_BAM -o $QUANTIFICATION_OUTPUT_DIR --biasCorrect 2> /dev/null"
+        docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home -v "${PATH_TO_REFERENCE_TRANSCRIPTOME_FILE}:/run/${TRANSCRIPTOME_FASTA_FILE}" genomicpariscentre/ribomap bash -c "salmon quant -t /run/${TRANSCRIPTOME_FASTA_FILE} -l $2 -a $RNA_BAM -o $QUANTIFICATION_OUTPUT_DIR --biasCorrect 2> /dev/null"
 
         if [ $? -ne 0 ]
         then
@@ -1494,9 +1498,9 @@ isoform_level_estimation() {
 
         if [ ! $RNASEQ_LIBTYPE = "unstranded" ]
         then
-          docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -v "$PATH_TO_REFERENCE_TRANSCRIPTOME_FILE:/run/${TRANSCRIPTOME_FASTA_FILE}" -w /home genomicpariscentre/ribomap:1.2 bash -c "riboprof --fasta /run/${TRANSCRIPTOME_FASTA_FILE} --mrnabam $RNASEQ_BAM --ribobam $RIBO_BAM --min_fplen $MIN_FPLEN --max_fplen $MAX_FPLEN --offset $POFFSET --cds_range $CDS_RANGE --sf $RNA_QUANTIFICATION --out $RIBOMAP_OUTPUT --useSecondary --tabd_cutoff 0 > $LOGFILE"
+          docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -v "$PATH_TO_REFERENCE_TRANSCRIPTOME_FILE:/run/${TRANSCRIPTOME_FASTA_FILE}" -w /home genomicpariscentre/ribomap bash -c "riboprof --fasta /run/${TRANSCRIPTOME_FASTA_FILE} --mrnabam $RNASEQ_BAM --ribobam $RIBO_BAM --min_fplen $MIN_FPLEN --max_fplen $MAX_FPLEN --offset $POFFSET --cds_range $CDS_RANGE --sf $RNA_QUANTIFICATION --out $RIBOMAP_OUTPUT --useSecondary --tabd_cutoff 0 > $LOGFILE"
         else
-          docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -v "$PATH_TO_REFERENCE_TRANSCRIPTOME_FILE:/run/${TRANSCRIPTOME_FASTA_FILE}" -w /home genomicpariscentre/ribomap:1.2 bash -c "riboprof --fasta /run/${TRANSCRIPTOME_FASTA_FILE} --mrnabam $RNASEQ_BAM --ribobam $RIBO_BAM --min_fplen $MIN_FPLEN --max_fplen $MAX_FPLEN --offset $POFFSET --cds_range $CDS_RANGE --sf $RNA_QUANTIFICATION --out $RIBOMAP_OUTPUT --useSecondary --useRC --tabd_cutoff 0 > $LOGFILE"
+          docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -v "$PATH_TO_REFERENCE_TRANSCRIPTOME_FILE:/run/${TRANSCRIPTOME_FASTA_FILE}" -w /home genomicpariscentre/ribomap bash -c "riboprof --fasta /run/${TRANSCRIPTOME_FASTA_FILE} --mrnabam $RNASEQ_BAM --ribobam $RIBO_BAM --min_fplen $MIN_FPLEN --max_fplen $MAX_FPLEN --offset $POFFSET --cds_range $CDS_RANGE --sf $RNA_QUANTIFICATION --out $RIBOMAP_OUTPUT --useSecondary --useRC --tabd_cutoff 0 > $LOGFILE"
         fi
 
         if [ $? -ne 0 ]
@@ -1550,10 +1554,10 @@ sam_to_bam_seqcluster() {
       echo "Starting of Samtools"
 
       # SAM to BAM conversion + sorting of BAM file
-      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/samtools:0.1.19 bash -c "samtools view -Sb $INPUT_ALIGNMENT | samtools sort - $SORTED_ALIGNMENT"
+      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/samtools bash -c "samtools view -Sb $INPUT_ALIGNMENT | samtools sort - $SORTED_ALIGNMENT"
 
       # Index BAI
-      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/samtools:0.1.19 bash -c "samtools index "${SORTED_ALIGNMENT}.bam" "${SORTED_ALIGNMENT}.bai""
+      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/samtools bash -c "samtools index "${SORTED_ALIGNMENT}.bam" "${SORTED_ALIGNMENT}.bai""
 
       if [ ! -s "${SORTED_ALIGNMENT}.bam" ]
       then
@@ -1604,7 +1608,7 @@ clustering_step_seqcluster() {
       if [ ! -s "${DIRNAME_GENOME}/${BASENAME_GENOME}.fai" ]
       then
         echo "Bulding of FASTA index (.fai) :"
-        docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $DIRNAME_GENOME:/home -w /home genomicpariscentre/samtools:0.1.19 bash -c "samtools faidx $BASENAME_GENOME"
+        docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $DIRNAME_GENOME:/home -w /home genomicpariscentre/samtools bash -c "samtools faidx $BASENAME_GENOME"
 
         if [ $? -ne 0 ]
         then
@@ -1616,7 +1620,7 @@ clustering_step_seqcluster() {
       fi
 
       # We run seqcluster clustering
-      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v /etc/passwd:/etc/passwd -v "${PATH_TO_REFERENCE_GENOME_FILE}:/run/${BASENAME_GENOME}" -v "${DIRNAME_GENOME}/${BASENAME_GENOME}.fai:/run/${BASENAME_GENOME}.fai" -v "${PATH_TO_ANNOTATION_FILE}:/run/${BASENAME_ANNOTATION}" -v ${WORKDIR}:/home -w /home genomicpariscentre/bcbio-nextgen:1.0.0a0 bash -c "/usr/local/bin/seqcluster cluster -a $INPUT_ALIGNMENT_CLUSTERING -m $INPUT_SEQCLUSTER_MATRIX --feature_id $IDATTR -g /run/${BASENAME_ANNOTATION} -o $DIR_OUTPUT_CLUSTERING -ref /run/${BASENAME_GENOME} --db multi_mapped_analysis_database"
+      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v /etc/passwd:/etc/passwd -v "${PATH_TO_REFERENCE_GENOME_FILE}:/run/${BASENAME_GENOME}" -v "${DIRNAME_GENOME}/${BASENAME_GENOME}.fai:/run/${BASENAME_GENOME}.fai" -v "${PATH_TO_ANNOTATION_FILE}:/run/${BASENAME_ANNOTATION}" -v ${WORKDIR}:/home -w /home genomicpariscentre/bcbio-nextgen bash -c "/usr/local/bin/seqcluster cluster -a $INPUT_ALIGNMENT_CLUSTERING -m $INPUT_SEQCLUSTER_MATRIX --feature_id $IDATTR -g /run/${BASENAME_ANNOTATION} -o $DIR_OUTPUT_CLUSTERING -ref /run/${BASENAME_GENOME} --db multi_mapped_analysis_database"
 
       if [ $? -ne 0 ]
       then
@@ -1689,7 +1693,7 @@ report_step_seqcluster() {
       fi
     else
 
-      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v /etc/passwd:/etc/passwd -v "${PATH_TO_REFERENCE_GENOME_FILE}:/run/${BASENAME_GENOME}" -v "${DIRNAME_GENOME}/${BASENAME_GENOME}.fai:/run/${BASENAME_GENOME}.fai" -v ${WORKDIR}:/home -w /home genomicpariscentre/bcbio-nextgen:1.0.0a0 bash -c "/usr/local/bin/seqcluster report -j $INPUT_JSON -o $DIROUT_REPORT -r /run/${BASENAME_GENOME}"
+      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v /etc/passwd:/etc/passwd -v "${PATH_TO_REFERENCE_GENOME_FILE}:/run/${BASENAME_GENOME}" -v "${DIRNAME_GENOME}/${BASENAME_GENOME}.fai:/run/${BASENAME_GENOME}.fai" -v ${WORKDIR}:/home -w /home genomicpariscentre/bcbio-nextgen bash -c "/usr/local/bin/seqcluster report -j $INPUT_JSON -o $DIROUT_REPORT -r /run/${BASENAME_GENOME}"
 
       if [ $? -ne 0 ]
       then
@@ -1721,7 +1725,7 @@ get_longest_transcripts_from_annotations() {
   then
     echo "Building annotations containing CoDing Sequences from longest transcripts :"
 
-    docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -v $DIRNAME_ANNOTATIONS:/root -w /home genomicpariscentre/gff3-ptools:0.4.0 bash -c "gtf-filter --keep-comments -o $CDS_ANNOTATIONS \"field feature == CDS\" /root/$INPUT_ANNOTATION"
+    docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -v $DIRNAME_ANNOTATIONS:/root -w /home genomicpariscentre/gff3-ptools bash -c "gtf-filter --keep-comments -o $CDS_ANNOTATIONS \"field feature == CDS\" /root/$INPUT_ANNOTATION"
 
     $PYTHON_SCRIPTS_PATH$PYTHON_SCRIPT_LONGEST_TRANSCRIPT -i $PATH_TO_ANNOTATION_FILE -o $CDS_LONGEST_TRANSCRIPTS_LIST
 
@@ -1756,7 +1760,7 @@ htseq_count() {
     else
       echo "Starting of expression estimation (counted reads/gene) :"
 
-      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/htseq:0.6.1p1 bash -c "htseq-count --mode $MODE_FOR_MULTIPLE_FEATURES_READS --type $FEATURE_TYPE --idattr $IDATTR --stranded $STRANDED --format $FILETYPE $FILTERED_SORTED_BAM $CDS_LONGEST_TRANSCRIPTS_ANNOTATIONS > $HTSEQCOUNT_FILE"
+      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/htseq bash -c "htseq-count --mode $MODE_FOR_MULTIPLE_FEATURES_READS --type $FEATURE_TYPE --idattr $IDATTR --stranded $STRANDED --format $FILETYPE $FILTERED_SORTED_BAM $CDS_LONGEST_TRANSCRIPTS_ANNOTATIONS > $HTSEQCOUNT_FILE"
 
       if [ $? -ne 0 ]
       then
@@ -1816,9 +1820,9 @@ build_rnaseq_ribopro_counting_tables() {
 
     echo "Building matrix expression for Babel :"
 
-    docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR_ANADIFF:/home -v $R_SCRIPTS_PATH:/root -w /home genomicpariscentre/babel:0.3-0 Rscript "/root/${R_SCRIPT_BUILD_COUNTING_TABLE_RNASEQ}" ${SAMPLES[@]}
+    docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR_ANADIFF:/home -v $R_SCRIPTS_PATH:/root -w /home genomicpariscentre/babel Rscript "/root/${R_SCRIPT_BUILD_COUNTING_TABLE_RNASEQ}" ${SAMPLES[@]}
 
-    docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR_ANADIFF:/home -v $R_SCRIPTS_PATH:/root -w /home genomicpariscentre/babel:0.3-0 Rscript "/root/${R_SCRIPT_BUILD_COUNTING_TABLE_RP}" ${SAMPLES[@]}
+    docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR_ANADIFF:/home -v $R_SCRIPTS_PATH:/root -w /home genomicpariscentre/babel Rscript "/root/${R_SCRIPT_BUILD_COUNTING_TABLE_RP}" ${SAMPLES[@]}
 
     echo "End of building matrix expression."
   else
@@ -1843,10 +1847,10 @@ anadif_babel() {
 
     echo "Differential analysis :"
 
-    docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR_ANADIFF:/home -w /home -v $R_SCRIPTS_PATH:/root genomicpariscentre/babel:0.3-0 Rscript "/root/${R_SCRIPT_ANADIFF_BABEL}" ${CONDITION_ARRAY[@]}
+    docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR_ANADIFF:/home -w /home -v $R_SCRIPTS_PATH:/root genomicpariscentre/babel Rscript "/root/${R_SCRIPT_ANADIFF_BABEL}" ${CONDITION_ARRAY[@]}
 
     echo "Permutation test :"
-    docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR_ANADIFF:/home -w /home -v $R_SCRIPTS_PATH:/root genomicpariscentre/babel:0.3-0 Rscript "/root/${R_SCRIPT_PERMT_TEST_BABEL}" ${CONDITION_ARRAY[@]}
+    docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR_ANADIFF:/home -w /home -v $R_SCRIPTS_PATH:/root genomicpariscentre/babel Rscript "/root/${R_SCRIPT_PERMT_TEST_BABEL}" ${CONDITION_ARRAY[@]}
 
     echo "End of statistical analysis."
   else
@@ -1895,10 +1899,10 @@ anadif_sartools() {
     if [ $WORKING_DIFFERENTIAL_ANALYSIS_PACKAGE = DESEQ2 ]
     then
       echo "Diffrential analysis :"
-      docker run --rm -u $(id -u):$(id -g) -v $WORKDIR_ANADIFF:/home -w /home -v $R_SCRIPTS_PATH:/root genomicpariscentre/sartools:1.3.2 Rscript "/root/${R_SCRIPT_ANADIFF_SARTOOLS_DESEQ2}" $PARAMETERS
+      docker run --rm -u $(id -u):$(id -g) -v $WORKDIR_ANADIFF:/home -w /home -v $R_SCRIPTS_PATH:/root genomicpariscentre/sartools Rscript "/root/${R_SCRIPT_ANADIFF_SARTOOLS_DESEQ2}" $PARAMETERS
     else
       echo "Diffrential analysis :"
-      docker run --rm -u $(id -u):$(id -g) -v $WORKDIR_ANADIFF:/home -w /home -v $R_SCRIPTS_PATH:/root genomicpariscentre/sartools:1.3.2 Rscript "/root/${R_SCRIPT_ANADIFF_SARTOOLS_EDGER}" $PARAMETERS
+      docker run --rm -u $(id -u):$(id -g) -v $WORKDIR_ANADIFF:/home -w /home -v $R_SCRIPTS_PATH:/root genomicpariscentre/sartools Rscript "/root/${R_SCRIPT_ANADIFF_SARTOOLS_EDGER}" $PARAMETERS
     fi
 
     echo "End of differential analysis."
@@ -1930,9 +1934,9 @@ anadif_clusters() {
 
   if [ $WORKING_DIFFERENTIAL_ANALYSIS_PACKAGE=DESEQ2 ]
   then
-    docker run --rm -u $(id -u):$(id -g) -v $WORKDIR_ANADIFCLUSTER:/home -w /home -v $R_SCRIPTS_PATH:/root genomicpariscentre/sartools:1.3.2 Rscript "/root/${R_SCRIPT_ANADIFF_SARTOOLS_DESEQ2}" $PARAMETERS
+    docker run --rm -u $(id -u):$(id -g) -v $WORKDIR_ANADIFCLUSTER:/home -w /home -v $R_SCRIPTS_PATH:/root genomicpariscentre/sartools Rscript "/root/${R_SCRIPT_ANADIFF_SARTOOLS_DESEQ2}" $PARAMETERS
   else
-    docker run --rm -u $(id -u):$(id -g) -v $WORKDIR_ANADIFCLUSTER:/home -w /home -v $R_SCRIPTS_PATH:/root genomicpariscentre/sartools:1.3.2 Rscript "/root/${R_SCRIPT_ANADIFF_SARTOOLS_EDGER}" $PARAMETERS
+    docker run --rm -u $(id -u):$(id -g) -v $WORKDIR_ANADIFCLUSTER:/home -w /home -v $R_SCRIPTS_PATH:/root genomicpariscentre/sartools Rscript "/root/${R_SCRIPT_ANADIFF_SARTOOLS_EDGER}" $PARAMETERS
   fi
   echo "End of differential analysis for clusters."
 }
