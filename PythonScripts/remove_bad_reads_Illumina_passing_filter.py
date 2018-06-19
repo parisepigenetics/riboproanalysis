@@ -5,11 +5,12 @@ import argparse
 import time
 
 parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input", required = True, metavar = "input.fastq", help = "Fastq with bad passing filter quality")
-    parser.add_argument("-o", "--output", required = True, metavar = "output.fastq", help = "Fastq without bad passing filter quality")
-    args = parser.parse_args()
-    FQ = args.input
-    Out = args.output
+parser.add_argument("-i", "--input", required = True, metavar = "input.fastq", help = "Fastq with bad passing filter quality")
+parser.add_argument("-o", "--output", required = True, metavar = "output.fastq", help = "Fastq without bad passing filter quality")
+
+args = parser.parse_args()
+FQ = args.input
+Out = args.output
 
 try:
 	fileFQ = open(FQ,"r")

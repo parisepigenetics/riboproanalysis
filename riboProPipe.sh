@@ -1,27 +1,25 @@
-#!/bin/bash -ex
+#!/bin/bash
 
-#######################################################################
-## The main bash script to run the ribosome profile pipeline.        ##
-##                                                                   ##
-## Version 0.9                                                       ##
-## Developer: Alexandra Bomane                                       ##
-##            <alexandra.bomane@laposte.fr>                          ##
-## Maintainer: Costas Bouyioukos                                     ##
-##      email: costas.bouyioukos@univ-paris-diderot.fr               ##
-## Developed in the PTER team at UMR7216, 2016-18                    ##
-## This program is a free software released under the GNU GPL v. 3   ##
-#######################################################################
+###############################################################################
+## The main bash script to run the ribosome profile pipeline.                ##
+##                                                                           ##
+## Version 0.9                                                               ##
+## Developer: Alexandra Bomane                                               ##
+##            <alexandra.bomane@laposte.fr>                                  ##
+## Maintainer: Costas Bouyioukos                                             ##
+##      email: costas.bouyioukos@univ-paris-diderot.fr                       ##
+## Developed in the PTER team at Paris Diderot and UMR7216, 2016-18          ##
+## This program is a free software released under the GNU GPL v. 3           ##
+###############################################################################
+
 
 ######################### Variables section ###########################
 ## Environment
-
 # For debugging
-#set -xv
+# set -exv
 # Allow to stop the program after an error, BUT doesn't display the error
-# TODO fix this, display the error. Look at the shebang line.
 
 #### TODO
-# Integrate parameter CASAVA_VERSION --> if 1.8 --> Run remove bad IQF (Illumina Qiality Filter) ; if not 1.8 --> DON'T run remove bad IQF (Illumina Qiality Filter)
 # Integrate parameter ANSWER_SPLICING_JUNCTIONS --> if YES let the STAR command line for mapping has it is ; if NO --> DON'T do splcing using --alignIntronMax 1 parameter of STAR
 
 # Working directory
@@ -39,43 +37,40 @@ export CHECK_DOCKER_IMAGES=NO
 export ANSWER_PSITE_CORRECTION=YES
 export STOP_EXEC_PSITE_CORRECTION=NO
 
-# Import configuration (.conf) file specified by the user: it overides default variables
-source $1
-
 # Error exit function
 function error_exit {
-  PROGNAME=$(basename $0)
-  echo "${PROGNAME}: ${1:-"Unknown Error"}" 1>&2
-	exit 1
+  PROGNAME=$(basename $@)
+  echo "${PROGNAME}: An error has occured at line: ${1}." 1>&2
+	exit 2
 }
 export -f error_exit
 
-# Check ANSWER_* variables
+# TODO Check ANSWER_* variables
 export WORKING_ANSWER_REMOVE_POLYN_READS=${ANSWER_REMOVE_POLYN_READS^^}
 if [ ! $WORKING_ANSWER_REMOVE_POLYN_READS = NO ] && [ ! $WORKING_ANSWER_REMOVE_POLYN_READS = YES ]
 then
   echo "Check your ANSWER_REMOVE_POLYN_READS parameter. It must be YES or NO."
-  error_exit "$LINENO: An error has occurred."
+  error_exit ${LINENO}
 fi
 
 export WORKING_ANSWER_DEMULTIPLEXING=${ANSWER_DEMULTIPLEXING^^}
 if [ ! $WORKING_ANSWER_DEMULTIPLEXING = NO ] && [ ! $WORKING_ANSWER_DEMULTIPLEXING = YES ]
 then
   echo "Check your ANSWER_DEMULTIPLEXING parameter. It must be YES or NO."
-  error_exit "$LINENO: An error has occurred."
+  error_exit ${LINENO}
 fi
 
 export WORKING_ANSWER_REMOVE_PCR_DUPLICATES=${ANSWER_REMOVE_PCR_DUPLICATES^^}
 if [ ! $WORKING_ANSWER_REMOVE_PCR_DUPLICATES = NO ] && [ ! $WORKING_ANSWER_REMOVE_PCR_DUPLICATES = YES ]
 then
   echo "Check your ANSWER_REMOVE_PCR_DUPLICATES parameter. It must be YES or NO."
-  error_exit "$LINENO: An error has occurred."
+  error_exit ${LINENO}
 fi
 export WORKING_ANSWER_RNASEQ_DATA=${ANSWER_RNASEQ_DATA^^}
 if [ ! $WORKING_ANSWER_RNASEQ_DATA = NO ] && [ ! $WORKING_ANSWER_RNASEQ_DATA = YES ]
 then
   echo "Check your ANSWER_RNASEQ_DATA parameter. It must be YES or NO."
-  error_exit "$LINENO: An error has occurred."
+  error_exit ${LINENO}
 fi
 
 if [ $WORKING_ANSWER_RNASEQ_DATA = YES ]
@@ -84,23 +79,23 @@ then
   if [ ! $WORKING_ANSWER_PE_RNASEQ = NO ] && [ ! $WORKING_ANSWER_PE_RNASEQ = YES ]
   then
     echo "Check your ANSWER_PE_RNASEQ parameter. It must be YES or NO."
-    error_exit "$LINENO: An error has occurred."
+    error_exit ${LINENO}
 
   elif [ -z $ANSWER_PE_RNASEQ ]
   then
     echo "ANSWER_PE_RNASEQ parameter is mandatory if you have RNA-seq data. It must be YES or NO."
-    error_exit "$LINENO: An error has occurred."
+    error_exit ${LINENO}
   fi
 
   if [ ! $RNASEQ_LIBTYPE = "forwardstrand" ] && [ ! $RNASEQ_LIBTYPE = "unstranded" ] && [ ! $RNASEQ_LIBTYPE = "reversestrand" ]
   then
     echo "Check your RNASEQ_LIBTYPE parameter. It must be 'forwardstrand' (Read 1/single-end reads belongs to the forward strand) or 'unstranded' or 'reversestrand' (Read 1/single-end reads belongs to reverse strand)"
-    error_exit "$LINENO: An error has occurred."
+    error_exit ${LINENO}
 
   elif [ -z $RNASEQ_LIBTYPE ]
   then
     echo "RNASEQ_LIBTYPE parameter is mandatory if you have RNA-seq data. It must be 'forwardstrand' (Read 1/single-end reads belongs to the forward strand) or 'unstranded' or 'reversestrand' (Read 1/single-end reads belongs to the reverse strand)"
-    error_exit "$LINENO: An error has occurred."
+    error_exit ${LINENO}
   fi
 fi
 
@@ -129,7 +124,7 @@ then
   SALMON_LIBTYPE="SF"
 fi
 
-#WORKING_ANSWER_KEEP_MULTIREAD=${ANSWER_KEEP_MULTIREAD^^}
+#WORKING_ANSWER_KEEP_MULTIREAD=${ANSWER_KEEP_MULTIREAD^^} # TODO Multiread analysis to be removed
 #if [ ! $WORKING_ANSWER_KEEP_MULTIREAD = NO ] && [ ! $WORKING_ANSWER_KEEP_MULTIREAD = YES ]
 #then
 #  echo "Check your ANSWER_KEEP_MULTIREAD parameter. It must be YES or NO."
@@ -146,9 +141,8 @@ export WORKING_STOP_EXEC_PSITE_CORRECTION=${STOP_EXEC_PSITE_CORRECTION^^}
 if [ ! "$WORKING_STOP_EXEC_PSITE_CORRECTION" = NO ] && [ ! $WORKING_STOP_EXEC_PSITE_CORRECTION = YES ]
 then
   echo "Check your STOP_EXEC_PSITE_CORRECTION parameter. It must be YES or NO."
-  error_exit "$LINENO: An error has occurred."
+  error_exit ${LINENO}
 fi
-
 
 # Tmp directory #TODO check if it is nessecary.
 if [ ! -e tmp/ ]
@@ -157,17 +151,17 @@ then
 fi
 export TMPDIR=$(readlink -f tmp/)
 
-
 # Muti-mapped reads analysis directory
-# TODO we will probably not include that in the final script.
+# TODO we will not include that in the final script.
 if [ ! -e multi_reads_analysis/ ]
 then
   mkdir -p multi_reads_analysis/
 fi
 
+# Import configuration (.conf) file specified by the user: it overides default variables
+source $1
 
 ## Scripts
-
 # Main Bash script
 export MAIN_SCRIPT_CANONICAL_PATH=$(readlink -f $0) ## basename $0
 export CANONICAL_PATH=$(dirname $MAIN_SCRIPT_CANONICAL_PATH)
@@ -177,6 +171,7 @@ export PYTHON_SCRIPTS_PATH="${CANONICAL_PATH}/PythonScripts/"
 export R_SCRIPTS_PATH="${CANONICAL_PATH}/RScripts/"
 
 #TODO probably there is NO NEED to have all these parameters as individual params. A call of the name of the script from the containing directory will be enough!
+# TODO Dockerise EVERYTHING!
 # Python scripts
 export PYTHON_SCRIPT_DEMULTIPLEXING="run_demultiplexing.py"
 export PYTHON_SCRIPT_REMOVE_PCR_DUP="rmDupPCR.py"
@@ -188,7 +183,6 @@ export PYTHON_SCRIPT_COUNT_CLUSTER="clusterCountings.py"
 export PYTHON_SCRIPT_ADD_START_GTF="add_cds_start_to_gtf.py"
 export PYTHON_SCRIPT_PSITE_AUTOCORRECTION="plastid_psite_offsets_autocorrection.py"
 export PYTHON_SCRIPT_CDS_RANGE_GENERATOR="cds_range_generator.py"
-
 # R scripts
 export R_SCRIPT_BUILD_COUNTING_TABLE_RNASEQ="RNAseqCountDataMatrix.R"
 export R_SCRIPT_BUILD_COUNTING_TABLE_RP="RPCountDataMatrix.R"
@@ -202,32 +196,32 @@ export R_SCRIPT_ANADIFF_SARTOOLS_EDGER="script_edgeR.R"
 if [ -z $PATH_TO_GENOME_INDEX ]
 then
   echo "Give your genome index path."
-  error_exit "$LINENO: An error has occurred."
+  error_exit ${LINENO}
 fi
 
 if [ -z "$PATH_TO_rRNA_INDEX" ]
 # TODO check if we really need to do that also.
 then
   echo "Give your rRNA index path."
-  error_exit "$LINENO: An error has occurred."
+  error_exit ${LINENO}
 fi
 
 if [ -z $SAMPLE_ARRAY ]
 then
   echo "Give the samples array in $1 (eg : SAMPLE_ARRAY=(sample1 sample2 ...))."
-  error_exit "$LINENO: An error has occurred."
+  error_exit ${LINENO}
 fi
 
 if [ -z $CONDITION_ARRAY ]
 then
   echo "Give the biological conditions array in $1 (eg : CONDITION_ARRAY=(sample1condition sample2condition ...))."
-  error_exit "$LINENO: An error has occurred."
+  error_exit ${LINENO}
 fi
 
 if [ -z $ADAPTER_SEQUENCE_THREE_PRIME ]
 then
   echo "Give the 3' adapter sequence in $1 (eg : ADAPTER_SEQUENCE_THREE_PRIME=MYADAPTERSEQUENCETHREEPRIME)"
-  error_exit "$LINENO: An error has occurred."
+  error_exit ${LINENO}
 fi
 
 export WORKING_SAMPLE_ARRAY=$(echo ${SAMPLE_ARRAY[*]})
@@ -238,7 +232,7 @@ then
   if [ -z $SAMPLE_INDEX_ARRAY ]
   then
     echo "Give your sample index array in $1 (eg : SAMPLE_INDEX_ARRAY=(sample1index sample2index ...))."
-    error_exit "$LINENO: An error has occurred."
+    error_exit ${LINENO}
   fi
 fi
 
@@ -256,32 +250,32 @@ then
   if [ -z $REFERENCE_CONDITION ]
   then
     echo "Give your reference (biological) condition in $1 (eg: REFERENCE_CONDITION=MYREFERENCECONDITION)"
-    error_exit "$LINENO: An error has occurred."
+    error_exit ${LINENO}
   fi
 fi
 
 if [ -z $PATH_TO_REFERENCE_GENOME_FILE ]
 then
   echo "Give the absolute path to your reference genome FASTA. in $1 (eg: PATH_TO_REFERENCE_GENOME_FILE=/path/to/my/ref/genome/mygenome.fasta)"
-  error_exit "$LINENO: An error has occurred."
+  error_exit ${LINENO}
 fi
 
 if [ -z $PATH_TO_REFERENCE_TRANSCRIPTOME_FILE ]
 then
   echo "Give the absolute path to your reference transcriptome FASTA. in $1 (eg: PATH_TO_REFERENCE_TRANSCRIPTOME_FILE=/path/to/my/ref/transcriptome/mytranscriptome.fasta)"
-  error_exit "$LINENO: An error has occurred."
+  error_exit ${LINENO}
 fi
 
 if [ -z $STRANDED ]
 then
   echo "Set the --stranded option of HTSeq-Count (For help : http://www-huber.embl.de/users/anders/HTSeq/doc/count.html)"
-  error_exit "$LINENO: An error has occurred."
+  error_exit ${LINENO}
 fi
 
 if [ -z $PATH_TO_ANNOTATION_FILE ]
 then
   echo "Give the path to your GTF annotations."
-  error_exit "$LINENO: An error has occurred."
+  error_exit ${LINENO}
 fi
 
 export WORKING_SAMPLE_INDEX_ARRAY=$(echo ${SAMPLE_INDEX_ARRAY[*]})
@@ -295,7 +289,6 @@ export SHELL=$(type -p bash)
 
 export CONDITION_ARRAY_UNIQ=$(echo "${CONDITION_ARRAY[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' ')
 
-
 # Check arrays length
 export NB_SAMPLE=$(echo ${#SAMPLE_ARRAY[@]})
 
@@ -305,7 +298,7 @@ then
   if [ $NB_SAMPLE_INDEX -ne $NB_SAMPLE ]
   then
     echo "SAMPLE_INDEX_ARRAY and SAMPLE_ARRAY have different lengths. Check them."
-    error_exit "$LINENO: An error has occurred."
+    error_exit ${LINENO}
   fi
 fi
 
@@ -315,13 +308,12 @@ then
   if [ $NB_CONDITION -ne $NB_SAMPLE ]
   then
     echo "CONDITION_ARRAY and SAMPLE_ARRAY have different lengths. Check them."
-    error_exit "$LINENO: An error has occurred."
+    error_exit ${LINENO}
   fi
 fi
 
-
 # Check Docker images
-# TODO UPDATE ALL docker images and make them all available from PAris Epigenetics.
+# TODO UPDATE ALL docker images and make them all available from Paris Epigenetics.
 export WORKING_CHECK_DOCKER_IMAGES=${CHECK_DOCKER_IMAGES^^}
 if [ ! $WORKING_CHECK_DOCKER_IMAGES = NO ]
 then
@@ -344,7 +336,7 @@ then
 #    docker pull parisepigenetics/umitools  TODO Integrate Umitools
   else
     echo "Check your CHECK_DOCKER_IMAGES parameter. It must be YES or NO."
-    error_exit "$LINENO: An error has occurred."
+    error_exit ${LINENO}
   fi
 fi
 
@@ -396,7 +388,7 @@ export FILETYPE="bam"
 
 
 #### FUNCTIONS ########################################################
-# TODO ALL I mean ALL the scripts we use will be dockerised (inclusing Python and R scripts.)
+#FIXME ALL I mean ALL the scripts we use will be dockerised (including Python and R scripts.)
 
 # Run demultiplexing to get Fastq files
 # $1 = SAMPLE $2 = ADAPTER
@@ -407,7 +399,7 @@ demultiplexing() {
     if [ -z $PATH_TO_RAW_UNDEMULTIPLEXED_FILE ]
     then
       echo "Give the path to your multiplexed FASTQ file."
-      error_exit "$LINENO: An error has occurred."
+      error_exit ${LINENO}
     fi
     LOGFILE="$1_demultiplexing.log"
     OUTFILE="$1_demultiplex.fastq"
@@ -420,7 +412,7 @@ demultiplexing() {
       if [ $? -ne 0 ]
       then
         echo "run_demultiplexing cannot run correctly ! Check your mutliplexed FASTQ path and your index adapter sequence."
-        error_exit "$LINENO: An error has occurred."
+        error_exit ${LINENO}
       fi
       echo "Log file : $LOGFILE generated."
       echo "End of demultiplexing."
@@ -431,7 +423,7 @@ demultiplexing() {
 }
 
 
-# Run FastQC to check input
+# Run FastQC for quality control report of the raw sequences.
 # $1 = directory output ; $2 = input
 fastqc_quality_control() {
   if [ "$(ls -1 $1)" ]
@@ -442,38 +434,40 @@ fastqc_quality_control() {
     if [ $? -ne 0 ]
     then
       echo "$1 image cannot be created !"
-      error_exit "$LINENO: An error has occurred."
+      error_exit ${LINENO}
     fi
       echo "Running FastQC..."
-        echo docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/fastqc -o $1 $2
-        docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/fastqc -o $1 $2
+        echo "docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -w /home genomicpariscentre/fastqc -o $1 $2"
+        docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -w /home genomicpariscentre/fastqc -o $1 $2
       if [ $? -ne 0 ]
       then
         echo "FastQC cannot run correctly ! $@"
-        error_exit "$LINENO: An error has occurred."
+        error_exit ${LINENO}
       fi
       echo "Finish FastQC."
   fi
 }
 
 
-# Run FastQC to check our demultiplexing
+# Run FastQC for quality control of the demultiplexed files.
 #TODO This function can be renamed raw_quality_control_report() ALSO this step can be merged with the previous one.
 raw_quality_report() {
   WORKING_ANSWER_DEMULTIPLEXING=${ANSWER_DEMULTIPLEXING^^}
   if [ $WORKING_ANSWER_DEMULTIPLEXING = YES ]
   then
-    INPUT_RAW_FASTQ="$1_demultiplex.fastq"
+    INPUT_RAW_FASTQ_PATH="${1}_demultiplex.fastq"
   else
-    INPUT_RAW_FASTQ="${1}.fastq"
+    INPUT_RAW_FASTQ_PATH="${1}.fastq"
   fi
-  DIR_RAW_FASTQ_REPORT="$1_raw_fastqc_report"
-  if [ -s $INPUT_RAW_FASTQ ]
+  DIR_RAW_FASTQ_REPORT="${1}_raw_fastqc_report"
+  if [ -s $INPUT_RAW_FASTQ_PATH ]
   then
-    fastqc_quality_control $DIR_RAW_FASTQ_REPORT $INPUT_RAW_FASTQ
+    RAW_FASTQ_REPORT=$(basename $DIR_RAW_FASTQ_REPORT)
+    INPUT_RAW_FASTQ=$(basename $INPUT_RAW_FASTQ_PATH)
+    fastqc_quality_control $RAW_FASTQ_REPORT $INPUT_RAW_FASTQ
   else
-    echo "$INPUT_RAW_FASTQ doesn't exist ! Check your SAMPLE_ARRAY."
-    error_exit "$LINENO: An error has occurred."
+    echo "$INPUT_RAW_FASTQ_PATH doesn't exist ! Check your SAMPLE_ARRAY."
+    error_exit ${LINENO}
   fi
 }
 
@@ -895,7 +889,6 @@ mapped_to_R_RNA_distrib_length() {
     echo "End of mapping to rRNA reads length distribution."
   fi
 }
-
 #TODO, after ALL these calls to fastqc integrate all the reporst with MUltiQC! FIXME
 
 # Run STAR to align reads to the reference genome
@@ -928,7 +921,8 @@ align_to_ref_genome() {
         error_exit "$LINENO: An error has occurred."
       fi
       #FIXME check optimal STAR alignment parameters.
-      docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -v $PATH_TO_GENOME_INDEX:/root -w /home genomicpariscentre/star bash -c "STAR --runThreadN $(nproc) --genomeDir /root --readFilesIn $INPUT_ALIGN_GENOME --outFileNamePrefix $DIR_ALIGN_STAR --outSAMunmapped Within --outFilterMismatchNmax $MAX_ALLOWED_MISMATCHES --quantMode TranscriptomeSAM --seedSearchStartLmax $SEED_SEARCH_POINT --outFilterScoreMinOverLread $FILTER_SCORE_MIN --outFilterMatchNminOverLread $FILTER_MATCH_MIN --winAnchorMultimapNmax $MAX_LOCI_ALLOWED --outFilterMultimapScoreRange $MULTIMAP_SCORE_RANGE"
+      STAR --runThreadN $(nproc) --genomeDir $PATH_TO_GENOME_INDEX --readFilesIn $INPUT_ALIGN_GENOME --outFileNamePrefix $DIR_ALIGN_STAR --outSAMunmapped Within --outFilterMismatchNmax $MAX_ALLOWED_MISMATCHES --quantMode TranscriptomeSAM --seedSearchStartLmax $SEED_SEARCH_POINT --outFilterScoreMinOverLread $FILTER_SCORE_MIN --outFilterMatchNminOverLread $FILTER_MATCH_MIN --winAnchorMultimapNmax $MAX_LOCI_ALLOWED --outFilterMultimapScoreRange $MULTIMAP_SCORE_RANGE
+      #docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -v $PATH_TO_GENOME_INDEX:/root -w /home genomicpariscentre/star bash -c "STAR --runThreadN $(nproc) --genomeDir /root --readFilesIn $INPUT_ALIGN_GENOME --outFileNamePrefix $DIR_ALIGN_STAR --outSAMunmapped Within --outFilterMismatchNmax $MAX_ALLOWED_MISMATCHES --quantMode TranscriptomeSAM --seedSearchStartLmax $SEED_SEARCH_POINT --outFilterScoreMinOverLread $FILTER_SCORE_MIN --outFilterMatchNminOverLread $FILTER_MATCH_MIN --winAnchorMultimapNmax $MAX_LOCI_ALLOWED --outFilterMultimapScoreRange $MULTIMAP_SCORE_RANGE"
       if [ ! -s "${DIR_ALIGN_STAR}Aligned.out.sam" ]
       then
         echo "STAR cannot run correctly ! Check your genome index path."
@@ -995,26 +989,26 @@ metagene_analysis() {
 
 
 # Align to reference genome for the seqcluster reads. (TODO check it... validate it)
-align_to_ref_genome_seqcluster() {
-  echo "Continuation of multi-mapped reads analysis (by Seqcluster) :"
-  echo "Starting of mapping to reference genome for multi-mapped reads analysis :"
-  DIR_MAPPING_GENOME="multi_reads_analysis/mappingStep/"
-  INPUT_MAPPING_GENOME="multi_reads_analysis/mappingStep/seqs_no_rRNA.fastq"
-  if [ -s "multi_reads_analysis/mappingStep/Aligned.out.sam" ]
-  then
-    echo "Mapping to reference genome for multi-mapped reads analysis already done."
-    return 0
-  else
-    docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -v $PATH_TO_GENOME_INDEX:/root -w /home genomicpariscentre/star bash -c "STAR --runThreadN $(nproc) --genomeDir /root --readFilesIn $INPUT_MAPPING_GENOME --outSAMunmapped Within --outFilterMismatchNmax $MAX_ALLOWED_MISMATCHES  --seedSearchStartLmax $SEED_SEARCH_POINT --outFilterScoreMinOverLread $FILTER_SCORE_MIN --outFilterMatchNminOverLread $FILTER_MATCH_MIN --winAnchorMultimapNmax $MAX_LOCI_ALLOWED --outFilterMultimapScoreRange $MULTIMAP_SCORE_RANGE --outFilterMultimapNmax $MULTIMAP_N_MAX --outFileNamePrefix $DIR_MAPPING_GENOME"
-    if [ $? -ne 0 ]
-    then
-      echo "STAR cannot run correcly ! Check your genome index path."
-      error_exit "$LINENO: An error has occurred."
-    fi
-    echo "Outputs generated in $DIR_MAPPING_GENOME"
-    echo "End of mapping to reference genome for multi-mapped reads analysis."
-  fi
-}
+# align_to_ref_genome_seqcluster() {
+#   echo "Continuation of multi-mapped reads analysis (by Seqcluster) :"
+#   echo "Starting of mapping to reference genome for multi-mapped reads analysis :"
+#   DIR_MAPPING_GENOME="multi_reads_analysis/mappingStep/"
+#   INPUT_MAPPING_GENOME="multi_reads_analysis/mappingStep/seqs_no_rRNA.fastq"
+#   if [ -s "multi_reads_analysis/mappingStep/Aligned.out.sam" ]
+#   then
+#     echo "Mapping to reference genome for multi-mapped reads analysis already done."
+#     return 0
+#   else
+#     docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -v $PATH_TO_GENOME_INDEX:/root -w /home genomicpariscentre/star bash -c "STAR --runThreadN $(nproc) --genomeDir /root --readFilesIn $INPUT_MAPPING_GENOME --outSAMunmapped Within --outFilterMismatchNmax $MAX_ALLOWED_MISMATCHES  --seedSearchStartLmax $SEED_SEARCH_POINT --outFilterScoreMinOverLread $FILTER_SCORE_MIN --outFilterMatchNminOverLread $FILTER_MATCH_MIN --winAnchorMultimapNmax $MAX_LOCI_ALLOWED --outFilterMultimapScoreRange $MULTIMAP_SCORE_RANGE --outFilterMultimapNmax $MULTIMAP_N_MAX --outFileNamePrefix $DIR_MAPPING_GENOME"
+#     if [ $? -ne 0 ]
+#     then
+#       echo "STAR cannot run correcly ! Check your genome index path."
+#       error_exit "$LINENO: An error has occurred."
+#     fi
+#     echo "Outputs generated in $DIR_MAPPING_GENOME"
+#     echo "End of mapping to reference genome for multi-mapped reads analysis."
+#   fi
+# }
 
 
 # Filter the SAM file to get conserve uniq reads
@@ -1116,9 +1110,9 @@ sam_to_bam() {
     else
       echo "Starting of Samtools"
       # SAM to BAM conversion + sorting of BAM file
-      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/samtools bash -c "samtools view -Sb $FILTERED_SAM | samtools sort - $FILTERED_SORTED_ALIGNMENT"
+      docker run --rm -u $(id -u):$(id -g) -T $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/samtools bash -c "samtools view -Sb $FILTERED_SAM | samtools sort - $FILTERED_SORTED_ALIGNMENT"
       # Index BAI
-      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/samtools bash -c "samtools index "${FILTERED_SORTED_ALIGNMENT}.bam" "${FILTERED_SORTED_ALIGNMENT}.bai""
+      docker run --rm -u $(id -u):$(id -g) -T $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/samtools bash -c "samtools index "${FILTERED_SORTED_ALIGNMENT}.bam" "${FILTERED_SORTED_ALIGNMENT}.bai""
       if [ ! -s "${FILTERED_SORTED_ALIGNMENT}.bam" ]
       then
         echo "Samtools cannot run correctly !"
@@ -1743,7 +1737,7 @@ export -f align_To_R_RNA_seqcluster
 export -f mapped_to_R_RNA_distrib_length
 export -f align_to_ref_genome
 export -f metagene_analysis
-export -f align_to_ref_genome_seqcluster
+#export -f align_to_ref_genome_seqcluster
 export -f samFiltering
 export -f mapped_to_genome_distrib_length
 export -f multimapped_to_genome_distrib_length
@@ -1842,19 +1836,19 @@ then
 fi
 wait
 
-parallel --no-notice collapse_step_seqcluster {.} ::: $WORKING_SAMPLE_ARRAY
-if [ $? -ne 0 ]
-then
-  error_exit "$LINENO: collapse_step_seqcluster An error has occurred."
-fi
-wait
+# parallel --no-notice collapse_step_seqcluster {.} ::: $WORKING_SAMPLE_ARRAY
+# if [ $? -ne 0 ]
+# then
+#   error_exit "$LINENO: collapse_step_seqcluster An error has occurred."
+# fi
+# wait
 
-prepareSamples_step_seqcluster
-if [ $? -ne 0 ]
-then
-  error_exit "$LINENO: prepareSamples_step_seqcluster An error has occurred."
-fi
-wait
+# prepareSamples_step_seqcluster
+# if [ $? -ne 0 ]
+# then
+#   error_exit "$LINENO: prepareSamples_step_seqcluster An error has occurred."
+# fi
+# wait
 
 align_To_R_RNA
 if [ $? -ne 0 ]
@@ -1870,12 +1864,12 @@ then
 fi
 wait
 
-align_To_R_RNA_seqcluster
-if [ $? -ne 0 ]
-then
-  error_exit "$LINENO: align_To_R_RNA_seqcluster An error has occurred."
-fi
-wait
+# align_To_R_RNA_seqcluster
+# if [ $? -ne 0 ]
+# then
+#   error_exit "$LINENO: align_To_R_RNA_seqcluster An error has occurred."
+# fi
+# wait
 
 parallel --no-notice mapped_to_R_RNA_distrib_length {.} ::: $WORKING_SAMPLE_ARRAY
 if [ $? -ne 0 ]
@@ -1884,12 +1878,16 @@ then
 fi
 wait
 
+echo "START ANALYSIS ------------------------------------"
+
 align_to_ref_genome
 if [ $? -ne 0 ]
 then
   error_exit "$LINENO: align_to_ref_genome An error has occurred."
 fi
 wait
+
+exit 1
 
 metagene_analysis
 if [ $? -ne 0 ]
@@ -1898,12 +1896,12 @@ then
 fi
 wait
 
-align_to_ref_genome_seqcluster
-if [ $? -ne 0 ]
-then
-  error_exit "$LINENO: align_to_ref_genome_seqcluster An error has occurred."
-fi
-wait
+# align_to_ref_genome_seqcluster
+# if [ $? -ne 0 ]
+# then
+#   error_exit "$LINENO: align_to_ref_genome_seqcluster An error has occurred."
+# fi
+# wait
 
 parallel --no-notice samFiltering {.} ::: $WORKING_SAMPLE_ARRAY
 if [ $? -ne 0 ]
