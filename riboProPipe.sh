@@ -319,10 +319,10 @@ if [ ! $WORKING_CHECK_DOCKER_IMAGES = NO ]
 then
   if [ $WORKING_CHECK_DOCKER_IMAGES = YES ]
   then
-    docker pull genomicpariscentre/fastqc
-    docker pull genomicpariscentre/cutadapt
+    docker pull parisepigenetics/fastqc
+    docker pull parisepigenetics/cutadapt
     docker pull genomicpariscentre/bowtie
-    docker pull genomicpariscentre/star
+    docker pull parisepigenetics/star
     docker pull genomicpariscentre/samtools
     docker pull genomicpariscentre/gff3-ptools
     docker pull genomicpariscentre/htseq
@@ -503,8 +503,8 @@ removeBadIQF() {
 
 # Check remove bad passing filter
 removeBadIQF_report() {
-  RM_BADIQF_DIR="$1_rmIQF_report"
-  RM_IQF_INPUT="$1_rmIQF.fastq"
+  RM_BADIQF_DIR=$(basename "$1_rmIQF_report")
+  RM_IQF_INPUT=$(basename "$1_rmIQF.fastq")
   if [ -s $RM_IQF_INPUT ]
   then
     fastqc_quality_control $RM_BADIQF_DIR $RM_IQF_INPUT
@@ -556,12 +556,12 @@ index_Adapter_trimming() {
   WORKING_ANSWER_DEMULTIPLEXING=${ANSWER_DEMULTIPLEXING^^}
   if [ $WORKING_ANSWER_DEMULTIPLEXING = YES ]
   then
-    INDEX_TRIM_OUTPUT="$1_TrimIndex.fastq"
+    INDEX_TRIM_OUTPUT=$(basename "$1_TrimIndex.fastq")
     if [ $WORKING_ANSWER_REMOVE_PCR_DUPLICATES = YES ]
     then
-      INDEX_TRIM_INPUT="$1_rmPCR.fastq"
+      INDEX_TRIM_INPUT=$(basename "$1_rmPCR.fastq")
     else
-      INDEX_TRIM_INPUT="$1_rmIQF.fastq"
+      INDEX_TRIM_INPUT=$(basename "$1_rmIQF.fastq")
     fi
     INDEX_LENGTH=$(expr length $2)
     LOGFILE="$1_TrimIndex.log"
@@ -610,17 +610,17 @@ threePrime_trimming() {
   WORKING_ANSWER_REMOVE_POLYN_READS=${ANSWER_REMOVE_POLYN_READS^^}
   if [ $WORKING_ANSWER_DEMULTIPLEXING = "YES" ]
   then
-    THREEPRIME_TRIM_INPUT="$1_TrimIndex.fastq"
+    THREEPRIME_TRIM_INPUT=$(basename "$1_TrimIndex.fastq")
   else
     if [ $WORKING_ANSWER_REMOVE_PCR_DUPLICATES = "YES" ]
     then
-      THREEPRIME_TRIM_INPUT="$1_rmPCR.fastq"
+      THREEPRIME_TRIM_INPUT=$(basename "$1_rmPCR.fastq")
     else
-      THREEPRIME_TRIM_INPUT="$1_rmIQF.fastq"
+      THREEPRIME_TRIM_INPUT=$(basename "$1_rmIQF.fastq")
     fi
   fi
-  THREEPRIME_TRIM_OUTPUT="$1_ThreePrime_Trim.fastq"
-  LOGFILE="$1_ThreePrimeTrim.log"
+  THREEPRIME_TRIM_OUTPUT=$(basename "$1_ThreePrime_Trim.fastq")
+  LOGFILE=$(basename "$1_ThreePrimeTrim.log")
   if [ -s $THREEPRIME_TRIM_OUTPUT ] && [ -s $LOGFILE ]
   then
     return 0
@@ -628,9 +628,9 @@ threePrime_trimming() {
     echo "3' trimming :"
     if [ $WORKING_ANSWER_REMOVE_POLYN_READS = "YES" ]
     then
-      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/cutadapt bash -c "cutadapt -a $2 --discard-untrimmed --max-n $FILTER_MAX_N -o $THREEPRIME_TRIM_OUTPUT $THREEPRIME_TRIM_INPUT > $LOGFILE"
+      docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -w /home genomicpariscentre/cutadapt bash -c "cutadapt -a $2 --discard-untrimmed --max-n $FILTER_MAX_N -o $THREEPRIME_TRIM_OUTPUT $THREEPRIME_TRIM_INPUT > $LOGFILE"
     else
-      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/cutadapt bash -c "cutadapt -a $2 --discard-untrimmed -o $THREEPRIME_TRIM_OUTPUT $THREEPRIME_TRIM_INPUT > $LOGFILE"
+      docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -w /home genomicpariscentre/cutadapt bash -c "cutadapt -a $2 --discard-untrimmed -o $THREEPRIME_TRIM_OUTPUT $THREEPRIME_TRIM_INPUT > $LOGFILE"
     fi
     if [ $? -ne 0 ]
     then
@@ -645,8 +645,8 @@ threePrime_trimming() {
 
 # Check the 3' trimming
 threePrime_trimming_report() {
-  DIR_THREEPRIME_TRIM_FASTQC="$1_ThreePrime_Trim_report"
-  THREEPRIME_TRIM_INPUT="$1_ThreePrime_Trim.fastq"
+  DIR_THREEPRIME_TRIM_FASTQC=$(basename "$1_ThreePrime_Trim_report")
+  THREEPRIME_TRIM_INPUT=$(basename "$1_ThreePrime_Trim.fastq")
   if [ -s $THREEPRIME_TRIM_INPUT ]
   then
     fastqc_quality_control $DIR_THREEPRIME_TRIM_FASTQC $THREEPRIME_TRIM_INPUT
@@ -677,7 +677,7 @@ size_Selection() {
     return 0
   else
     echo "Size selection :"
-    docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/cutadapt bash -c "cutadapt -m $MIN_READ_LENGTH -M $MAX_READ_LENGTH -o $SIZE_SELECT_OUTPUT $THREEPRIME_TRIM_INPUT > $LOGFILE"
+    docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -w /home genomicpariscentre/cutadapt bash -c "cutadapt -m $MIN_READ_LENGTH -M $MAX_READ_LENGTH -o $SIZE_SELECT_OUTPUT $THREEPRIME_TRIM_INPUT > $LOGFILE"
     if [ $? -ne 0 ]
     then
       echo "Cutadapt cannot run correctly !"
@@ -691,8 +691,8 @@ size_Selection() {
 
 # We shake (TODO, what shake means here...??) the size selection
 size_Selection_report() {
-  DIR_SIZE_SELECT_FASTQC="$1_Size_Selection_report"
-  SIZE_SELECT_INPUT="$1_SizeSelection.fastq"
+  DIR_SIZE_SELECT_FASTQC=$(basename "$1_Size_Selection_report")
+  SIZE_SELECT_INPUT=$(basename "$1_SizeSelection.fastq")
   if [ -s $SIZE_SELECT_INPUT ]
   then
     fastqc_quality_control $DIR_SIZE_SELECT_FASTQC $SIZE_SELECT_INPUT
@@ -702,194 +702,8 @@ size_Selection_report() {
   fi
 }
 
-
-## Prepare Seqcluster.
-#TODO look at previous comments we do not know if we need to keep seqcluster.
-collapse_step_seqcluster() {
-  echo "Start of multi-mapped reads analysis (by Seqcluster) :"
-  echo "Collapse reads step"
-  DIR_COLLAPSE_OUTPUT="multi_reads_analysis/$1_collapseStep"
-  FASTQ_CLEAN_INPUT="$1_SizeSelection.fastq"
-  if [ "$(ls -1 $DIR_COLLAPSE_OUTPUT)" ]
-  then
-    echo "Collapse reads step already done for $1"
-    return 0
-  else
-    if [ -s $FASTQ_CLEAN_INPUT ]
-    then
-      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v /etc/passwd:/etc/passwd -v ${WORKDIR}:/home -w /home genomicpariscentre/bcbio-nextgen bash -c "/usr/local/bin/seqcluster collapse -f $FASTQ_CLEAN_INPUT -o $DIR_COLLAPSE_OUTPUT"
-      if [ $? -ne 0 ]
-      then
-        echo "Error during collapse reads step."
-        error_exit "$LINENO: An error has occurred."
-      fi
-      mv ${DIR_COLLAPSE_OUTPUT}/$(basename $FASTQ_CLEAN_INPUT .fastq)_trimmed.fastq ${DIR_COLLAPSE_OUTPUT}/$(basename $FASTQ_CLEAN_INPUT .fastq)_collapsed.fastq
-      echo "$DIR_COLLAPSE_OUTPUT directory was generated."
-      echo "End of collapse reads step."
-    else
-      echo "$FASTQ_CLEAN_INPUT doesn't exist : this step cannot run correctly."
-      error_exit "$LINENO: An error has occurred."
-    fi
-  fi
-}
-
-prepareSamples_step_seqcluster() {
-  echo "Continuation of multi-mapped reads analysis (by Seqcluster) :"
-  echo "Prepare samples step"
-  DIR_PREPARE_SAMPLES_OUTPUT="multi_reads_analysis/prepareSamplesStep"
-  if [ "$(ls -1 $DIR_PREPARE_SAMPLES_OUTPUT)" ]
-  then
-    echo "Prepare samples step alredy done."
-    return 0
-  else
-    if [ -s seqclusterPrepareConfiguration.txt ]
-    then
-      rm seqclusterPrepareConfiguration.txt
-    fi
-# Building of the configuration table for Prepare samples step
-    for index in ${!SAMPLE_ARRAY[*]}
-    do
-      WORKING_ANSWER_DEMULTIPLEXING=${ANSWER_DEMULTIPLEXING^^}
-      if [ $WORKING_ANSWER_DEMULTIPLEXING = "YES" ]
-      then
-        SAMPLE=${SAMPLE_ARRAY[$index]}
-      else
-        SAMPLE=$(basename ${SAMPLE_ARRAY[$index]} .fastq)
-      fi
-      echo -e "multi_reads_analysis/${SAMPLE}_collapseStep/${SAMPLE}_SizeSelection_collapsed.fastq"\\t$SAMPLE >> seqclusterPrepareConfiguration.txt
-    done
-    docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v /etc/passwd:/etc/passwd -v ${WORKDIR}:/home -w /home genomicpariscentre/bcbio-nextgen bash -c "/usr/local/bin/seqcluster prepare -c seqclusterPrepareConfiguration.txt -o $DIR_PREPARE_SAMPLES_OUTPUT --minc $MIN_COUNT --minl $MIN_SIZE --maxl $MAX_SIZE --min-shared $MIN_SHARED"
-    if [ $? -ne 0 ]
-    then
-      echo "Error during prepare samples step."
-      error_exit "$LINENO: An error has occurred."
-    fi
-    echo "$DIR_PREPARE_SAMPLES_OUTPUT directory was generated."
-    echo "End of prepare samples step."
-  fi
-}
-
-
-#TODO there is no need to employ Bowtie.
-# Run Bowtie 1 to align reads to rRNA sequences : we get unmapped reads for next steps and mapped reads to have length distribution (Python script using matplotlib) # TODO Try with STAR
-align_To_R_RNA() {
-  for sample in ${SAMPLE_ARRAY[*]}
-  do
-    echo "Starting of mapping to rRNA :"
-    WORKING_ANSWER_DEMULTIPLEXING=${ANSWER_DEMULTIPLEXING^^}
-    if [ $WORKING_ANSWER_DEMULTIPLEXING = "YES" ]
-    then
-      UNMAPPED_RNA_FASTQ_FILE="${sample}_no_rRNA.fastq"
-      MAPPED_RNA_SAM_FILE="${sample}_rRNA_mapped.sam"
-      LOGFILE_BOWTIE="${sample}_rRNA_mapping.log"
-      INPUT_RNA_MAPPING="${sample}_SizeSelection.fastq"
-    else
-      BASENAME=$(basename $sample .fastq)
-      UNMAPPED_RNA_FASTQ_FILE="${BASENAME}_no_rRNA.fastq"
-      MAPPED_RNA_SAM_FILE="${BASENAME}_rRNA_mapped.sam"
-      LOGFILE_BOWTIE="${BASENAME}_rRNA_mapping.log"
-      INPUT_RNA_MAPPING="${BASENAME}_SizeSelection.fastq"
-    fi
-    rRNA_INDEX_BASENAME=$(echo $(basename ${PATH_TO_rRNA_INDEX}/*.1.ebwt | cut -f1 -d'.'))
-    if [ -s $UNMAPPED_RNA_FASTQ_FILE ] && [ -s $MAPPED_RNA_SAM_FILE ]
-    then
-      echo "Mapping to rRNA already done for $sample"
-      #return 0
-    else
-      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home -v $PATH_TO_rRNA_INDEX:/root genomicpariscentre/bowtie1 bash -c "bowtie -p $(nproc) $BOWTIE_OPTIONS $UNMAPPED_RNA_FASTQ_FILE /root/$rRNA_INDEX_BASENAME $INPUT_RNA_MAPPING $MAPPED_RNA_SAM_FILE 2> $LOGFILE_BOWTIE"
-      if [ $? -ne 0 ]
-      then
-        echo "Bowtie1 cannot run correctly ! Check the rRNA index path."
-        error_exit "$LINENO: An error has occurred."
-      fi
-      echo "Log file : $LOGFILE_BOWTIE generated."
-      echo "End of mapping to rRNA."
-    fi
-  done
-}
-
-
-# Run FASTQC on unmapped fastq
-unmmaped_to_rRNA_report() {
-  DIR_UNMAPPED_RRNA_FASTQC="$1_no_rRNA_report"
-  UNMAPPED_RRNA_INPUT="$1_no_rRNA.fastq"
-  if [ -s $UNMAPPED_RRNA_INPUT ]
-  then
-    fastqc_quality_control $DIR_UNMAPPED_RRNA_FASTQC $UNMAPPED_RRNA_INPUT
-  else
-    echo "$UNMAPPED_RRNA_INPUT doesn't exist ! Check your rRNA index path."
-    error_exit "$LINENO: An error has occurred."
-  fi
-}
-
-
-# Filter rRNA from seqs.fastq generated by Seqcluster
-align_To_R_RNA_seqcluster() {
-  echo "Continuation of multi-mapped reads analysis (by Seqcluster) :"
-  echo "Starting of mapping to rRNA for multi-mapped reads analysis :"
-  DIR_RNA_MAPPING="multi_reads_analysis/mappingStep/"
-  UNMAPPED_RNA_FASTQ_FILE="multi_reads_analysis/mappingStep/seqs_no_rRNA.fastq"
-              MAPPED_RNA_SAM_FILE="multi_reads_analysis/mappingStep/seqs_rRNA_mapped.sam"
-  UNMAPPED_RNA_LIST="multi_reads_analysis/mappingStep/seqs_no_rRNA.list"
-  UNMAPPED_RNA_MATRIX="multi_reads_analysis/prepareSamplesStep/seqs_no_rRNA.ma"
-  PREPARE_STEP_MATRIX="multi_reads_analysis/prepareSamplesStep/seqs.ma"
-              LOGFILE="multimapped_analysis_rRNA_mapping.log"
-              INPUT_RNA_MAPPING="multi_reads_analysis/prepareSamplesStep/seqs.fastq"
-  if [ -e $DIR_RNA_MAPPING ]
-  then
-    if [ -s $UNMAPPED_RNA_FASTQ_FILE ] && [ -s $MAPPED_RNA_SAM_FILE ]
-    then
-      echo "Mapping to rRNA for multi-mapped reads analysis already done."
-      return 0
-    fi
-  else
-    rRNA_INDEX_BASENAME=$(echo $(basename ${PATH_TO_rRNA_INDEX}/*.1.ebwt | cut -f1 -d'.'))
-    mkdir -p $DIR_RNA_MAPPING
-    docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home -v $PATH_TO_rRNA_INDEX:/root genomicpariscentre/bowtie1 bash -c "bowtie -p $(nproc) $BOWTIE_OPTIONS $UNMAPPED_RNA_FASTQ_FILE /root/$rRNA_INDEX_BASENAME $INPUT_RNA_MAPPING $MAPPED_RNA_SAM_FILE 2> $LOGFILE"
-    if [ $? -ne 0 ]
-    then
-      echo "Bowtie1 cannot run correctly ! Check the rRNA index path."
-      error_exit "$LINENO: An error has occurred."
-    fi
-    if [ ! -s $UNMAPPED_RNA_MATRIX ]
-    then
-      grep "@seq" $UNMAPPED_RNA_FASTQ_FILE | cut -f2 -d "@" | sort -T $TMPDIR > $UNMAPPED_RNA_LIST
-                        grep "^id" $PREPARE_STEP_MATRIX >> $UNMAPPED_RNA_MATRIX
-      nawk 'FNR==NR{a[$0];next}($1 in a)' $UNMAPPED_RNA_LIST $PREPARE_STEP_MATRIX >> $UNMAPPED_RNA_MATRIX
-    fi
-    if [ $? -ne 0 ]
-    then
-      echo "Cannot generate $UNMAPPED_RNA_MATRIX"
-      error_exit "$LINENO: An error has occurred."
-    fi
-    echo "$UNMAPPED_RNA_MATRIX generated."
-    echo "Log file : $LOGFILE generated."
-    echo "End of mapping to rRNA (for multi-mapped analysis)."
-
-  fi
-}
-
-
-# We run the Python library matplotlib TODO ...no it does not seem to do this...
-mapped_to_R_RNA_distrib_length() {
-  INPUT_SAM_MAPPED_RNA="$1_rRNA_mapped.sam"
-  DISTR_LGT_PDF="$1_mapped2rRNA_read_length_distribution.pdf"
-  if [ -s $DISTR_LGT_PDF ]
-  then
-    return 0
-  else
-    echo "Computing mapped to rRNA reads length distribution..."
-    grep -v '^@' $INPUT_SAM_MAPPED_RNA | awk '{print length($10)}' | $PYTHON_SCRIPTS_PATH$PYTHON_SCRIPT_READ_LENGTH_DISTRIBUTION $DISTR_LGT_PDF -e $INPUT_SAM_MAPPED_RNA
-    if [ ! -s $DISTR_LGT_PDF ]
-    then
-      echo "Cannot compute mapped to rRNA reads length distribution !"
-      error_exit "$LINENO: An error has occurred."
-    fi
-    echo "PDF file : $DISTR_LGT_PDF generated"
-    echo "End of mapping to rRNA reads length distribution."
-  fi
-}
 #TODO, after ALL these calls to fastqc integrate all the reporst with MUltiQC! FIXME
+
 
 # Run STAR to align reads to the reference genome
 align_to_ref_genome() {
@@ -899,16 +713,16 @@ align_to_ref_genome() {
     WORKING_ANSWER_DEMULTIPLEXING=${ANSWER_DEMULTIPLEXING^^}
     if [ $WORKING_ANSWER_DEMULTIPLEXING = YES ]
     then
-      DIR_ALIGN_STAR="${sample}_align_star/"
-      INPUT_ALIGN_GENOME="${sample}_no_rRNA.fastq"
+      DIR_ALIGN_STAR="${sample}_STARalignments/"
+      INPUT_ALIGN_GENOME="${sample}_SizeSelection.fastq"
     else
       BASENAME=$(basename $sample .fastq)
-      DIR_ALIGN_STAR="${BASENAME}_align_star/"
-      INPUT_ALIGN_GENOME="${BASENAME}_no_rRNA.fastq"
+      DIR_ALIGN_STAR="${BASENAME}_STARalignments/"
+      INPUT_ALIGN_GENOME="${BASENAME}_SizeSelection.fastq"
     fi
-    if [ -e $DIR_ALIGN_STAR ]
+    if [ -e ${DIR_ALIGN_STAR} ]
     then
-      if [ -s "${DIR_ALIGN_STAR}Log.final.out" ] && [ -s "${DIR_ALIGN_STAR}Aligned.out.sam" ]
+      if [ -s "${DIR_ALIGN_STAR}Log.final.out" ]
       then
         echo "Mapping already done for $sample."
         #return 0
@@ -920,12 +734,14 @@ align_to_ref_genome() {
         echo "Cannot create the directory !"
         error_exit "$LINENO: An error has occurred."
       fi
-      #FIXME check optimal STAR alignment parameters.
-      STAR --runThreadN $(nproc) --genomeDir $PATH_TO_GENOME_INDEX --readFilesIn $INPUT_ALIGN_GENOME --outFileNamePrefix $DIR_ALIGN_STAR --outSAMunmapped Within --outFilterMismatchNmax $MAX_ALLOWED_MISMATCHES --quantMode TranscriptomeSAM --seedSearchStartLmax $SEED_SEARCH_POINT --outFilterScoreMinOverLread $FILTER_SCORE_MIN --outFilterMatchNminOverLread $FILTER_MATCH_MIN --winAnchorMultimapNmax $MAX_LOCI_ALLOWED --outFilterMultimapScoreRange $MULTIMAP_SCORE_RANGE
-      #docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -v $PATH_TO_GENOME_INDEX:/root -w /home genomicpariscentre/star bash -c "STAR --runThreadN $(nproc) --genomeDir /root --readFilesIn $INPUT_ALIGN_GENOME --outFileNamePrefix $DIR_ALIGN_STAR --outSAMunmapped Within --outFilterMismatchNmax $MAX_ALLOWED_MISMATCHES --quantMode TranscriptomeSAM --seedSearchStartLmax $SEED_SEARCH_POINT --outFilterScoreMinOverLread $FILTER_SCORE_MIN --outFilterMatchNminOverLread $FILTER_MATCH_MIN --winAnchorMultimapNmax $MAX_LOCI_ALLOWED --outFilterMultimapScoreRange $MULTIMAP_SCORE_RANGE"
-      if [ ! -s "${DIR_ALIGN_STAR}Aligned.out.sam" ]
+      #TODO check optimal STAR alignment parameters.
+      echo "Start STAR alignment!"
+      echo "docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -v $PATH_TO_GENOME_INDEX:/root -w /home parisepigenetics/star bash -c STAR --runThreadN $(nproc) --genomeDir /root --readFilesIn $INPUT_ALIGN_GENOME --outFileNamePrefix $DIR_ALIGN_STAR --outSAMunmapped Within --outFilterMultimapNmax 20 --outSAMprimaryFlag AllBestScore --twopassMode Basic --outSAMtype BAM SortedByCoordinate --quantMode TranscriptomeSAM GeneCounts --outStd Log --seedSearchStartLmaxOverLread 0.5 --winAnchorMultimapNmax 25 --outFilterScoreMinOverLread 0.5 --outFilterMatchNminOverLread 0.5"
+      docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -v $PATH_TO_GENOME_INDEX:/root -w /home parisepigenetics/star bash -c "STAR --runThreadN $(nproc) --genomeDir /root --readFilesIn $INPUT_ALIGN_GENOME --outFileNamePrefix $DIR_ALIGN_STAR --outSAMunmapped Within --outFilterMultimapNmax 20 --outSAMprimaryFlag AllBestScore --twopassMode Basic --outSAMtype BAM SortedByCoordinate --quantMode TranscriptomeSAM GeneCounts --outStd Log --seedSearchStartLmaxOverLread 0.5 --winAnchorMultimapNmax 25 --outFilterScoreMinOverLread 0.5 --outFilterMatchNminOverLread 0.5"
+      # OLD_CALL docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -v $PATH_TO_GENOME_INDEX:/root -w /home genomicpariscentre/star bash -c "STAR --runThreadN $(nproc) --genomeDir /root --readFilesIn $INPUT_ALIGN_GENOME --outFileNamePrefix $DIR_ALIGN_STAR --outSAMunmapped Within --outFilterMismatchNmax $MAX_ALLOWED_MISMATCHES --quantMode TranscriptomeSAM --seedSearchStartLmax $SEED_SEARCH_POINT --outFilterScoreMinOverLread $FILTER_SCORE_MIN --outFilterMatchNminOverLread $FILTER_MATCH_MIN --winAnchorMultimapNmax $MAX_LOCI_ALLOWED --outFilterMultimapScoreRange $MULTIMAP_SCORE_RANGE"
+      if [ ! -s "${DIR_ALIGN_STAR}ReadsPerGene.out.tab" ]
       then
-        echo "STAR cannot run correctly ! Check your genome index path."
+        echo "STAR did not run correctly ! Check your files and directories."
         error_exit "$LINENO: An error has occurred."
       fi
       echo "Directory $DIR_ALIGN_STAR generated"
@@ -986,29 +802,6 @@ metagene_analysis() {
     return 0
   fi
 }
-
-
-# Align to reference genome for the seqcluster reads. (TODO check it... validate it)
-# align_to_ref_genome_seqcluster() {
-#   echo "Continuation of multi-mapped reads analysis (by Seqcluster) :"
-#   echo "Starting of mapping to reference genome for multi-mapped reads analysis :"
-#   DIR_MAPPING_GENOME="multi_reads_analysis/mappingStep/"
-#   INPUT_MAPPING_GENOME="multi_reads_analysis/mappingStep/seqs_no_rRNA.fastq"
-#   if [ -s "multi_reads_analysis/mappingStep/Aligned.out.sam" ]
-#   then
-#     echo "Mapping to reference genome for multi-mapped reads analysis already done."
-#     return 0
-#   else
-#     docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -v $PATH_TO_GENOME_INDEX:/root -w /home genomicpariscentre/star bash -c "STAR --runThreadN $(nproc) --genomeDir /root --readFilesIn $INPUT_MAPPING_GENOME --outSAMunmapped Within --outFilterMismatchNmax $MAX_ALLOWED_MISMATCHES  --seedSearchStartLmax $SEED_SEARCH_POINT --outFilterScoreMinOverLread $FILTER_SCORE_MIN --outFilterMatchNminOverLread $FILTER_MATCH_MIN --winAnchorMultimapNmax $MAX_LOCI_ALLOWED --outFilterMultimapScoreRange $MULTIMAP_SCORE_RANGE --outFilterMultimapNmax $MULTIMAP_N_MAX --outFileNamePrefix $DIR_MAPPING_GENOME"
-#     if [ $? -ne 0 ]
-#     then
-#       echo "STAR cannot run correcly ! Check your genome index path."
-#       error_exit "$LINENO: An error has occurred."
-#     fi
-#     echo "Outputs generated in $DIR_MAPPING_GENOME"
-#     echo "End of mapping to reference genome for multi-mapped reads analysis."
-#   fi
-# }
 
 
 # Filter the SAM file to get conserve uniq reads
@@ -1215,7 +1008,7 @@ p_offset_analysis() {
 
 
 rna_seq_quantification() {
-# The user MUST do transcriptome mapping of their RNA-seq data before (TODO, why it needs to be done like this..)
+# The user MUST do transcriptome mapping of their RNA-seq data before (TODO, why it needs to be done like this!!!!)
   WORKING_ANSWER_RNASEQ_DATA=${ANSWER_RNASEQ_DATA^^}
   if [ $WORKING_ANSWER_RNASEQ_DATA = YES ]
   then
@@ -1730,11 +1523,11 @@ export -f threePrime_trimming
 export -f threePrime_trimming_report
 export -f size_Selection
 export -f size_Selection_report
-export -f collapse_step_seqcluster
-export -f align_To_R_RNA
-export -f unmmaped_to_rRNA_report
-export -f align_To_R_RNA_seqcluster
-export -f mapped_to_R_RNA_distrib_length
+#export -f collapse_step_seqcluster
+#export -f align_To_R_RNA
+#export -f unmmaped_to_rRNA_report
+#export -f align_To_R_RNA_seqcluster
+#export -f mapped_to_R_RNA_distrib_length
 export -f align_to_ref_genome
 export -f metagene_analysis
 #export -f align_to_ref_genome_seqcluster
@@ -1850,19 +1643,19 @@ wait
 # fi
 # wait
 
-align_To_R_RNA
-if [ $? -ne 0 ]
-then
-  error_exit "$LINENO: align_To_R_RNA An error has occurred."
-fi
-wait
+# align_To_R_RNA
+# if [ $? -ne 0 ]
+# then
+#   error_exit "$LINENO: align_To_R_RNA An error has occurred."
+# fi
+# wait
 
-parallel --no-notice unmmaped_to_rRNA_report {.} ::: $WORKING_SAMPLE_ARRAY
-if [ $? -ne 0 ]
-then
-  error_exit "$LINENO: align_To_R_RNA An error has occurred."
-fi
-wait
+# parallel --no-notice unmmaped_to_rRNA_report {.} ::: $WORKING_SAMPLE_ARRAY
+# if [ $? -ne 0 ]
+# then
+#   error_exit "$LINENO: align_To_R_RNA An error has occurred."
+# fi
+# wait
 
 # align_To_R_RNA_seqcluster
 # if [ $? -ne 0 ]
@@ -1871,12 +1664,12 @@ wait
 # fi
 # wait
 
-parallel --no-notice mapped_to_R_RNA_distrib_length {.} ::: $WORKING_SAMPLE_ARRAY
-if [ $? -ne 0 ]
-then
-  error_exit "$LINENO: mapped_to_R_RNA_distrib_length An error has occurred."
-fi
-wait
+# parallel --no-notice mapped_to_R_RNA_distrib_length {.} ::: $WORKING_SAMPLE_ARRAY
+# if [ $? -ne 0 ]
+# then
+#   error_exit "$LINENO: mapped_to_R_RNA_distrib_length An error has occurred."
+# fi
+# wait
 
 echo "START ANALYSIS ------------------------------------"
 
@@ -1917,12 +1710,12 @@ then
 fi
 wait
 
-parallel --no-notice multimapped_to_genome_distrib_length {.} ::: $WORKING_SAMPLE_ARRAY
-if [ $? -ne 0 ]
-then
-  error_exit "$LINENO: multimapped_to_genome_distrib_length An error has occurred."
-fi
-wait
+# parallel --no-notice multimapped_to_genome_distrib_length {.} ::: $WORKING_SAMPLE_ARRAY
+# if [ $? -ne 0 ]
+# then
+#   error_exit "$LINENO: multimapped_to_genome_distrib_length An error has occurred."
+# fi
+# wait
 
 parallel --no-notice sam_to_bam {.} ::: $WORKING_SAMPLE_ARRAY
 if [ $? -ne 0 ]
@@ -2024,7 +1817,7 @@ fi
 wait
 
 # Write final report
-#TODO DEFINITELY ,ake something about that!
+#TODO DEFINITELY do something about that!
 #FINALLOGFILE="${PROJECT_NAME}.final.report"
 #for file in $(ls -c *log); do stat -c '%y' $file >> $FINALLOGFILE; printf "\n" >> $FINALLOGFILE; cat $file >> $FINALLOGFILE; done
 
@@ -2033,3 +1826,218 @@ mkdir -p log
 chown $(id -u):$(id -g) -R log
 mv *.log log
 echo "End of the analysis, log files in log/ directory."
+
+############################ THE END ##################################
+
+
+
+#### Depricated functions (keep them only for legacy reasons.
+## Prepare Seqcluster.
+#TODO look at previous comments we do not know if we need to keep seqcluster.
+collapse_step_seqcluster() {
+  echo "Start of multi-mapped reads analysis (by Seqcluster) :"
+  echo "Collapse reads step"
+  DIR_COLLAPSE_OUTPUT="multi_reads_analysis/$1_collapseStep"
+  FASTQ_CLEAN_INPUT="$1_SizeSelection.fastq"
+  if [ "$(ls -1 $DIR_COLLAPSE_OUTPUT)" ]
+  then
+    echo "Collapse reads step already done for $1"
+    return 0
+  else
+    if [ -s $FASTQ_CLEAN_INPUT ]
+    then
+      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v /etc/passwd:/etc/passwd -v ${WORKDIR}:/home -w /home genomicpariscentre/bcbio-nextgen bash -c "/usr/local/bin/seqcluster collapse -f $FASTQ_CLEAN_INPUT -o $DIR_COLLAPSE_OUTPUT"
+      if [ $? -ne 0 ]
+      then
+        echo "Error during collapse reads step."
+        error_exit "$LINENO: An error has occurred."
+      fi
+      mv ${DIR_COLLAPSE_OUTPUT}/$(basename $FASTQ_CLEAN_INPUT .fastq)_trimmed.fastq ${DIR_COLLAPSE_OUTPUT}/$(basename $FASTQ_CLEAN_INPUT .fastq)_collapsed.fastq
+      echo "$DIR_COLLAPSE_OUTPUT directory was generated."
+      echo "End of collapse reads step."
+    else
+      echo "$FASTQ_CLEAN_INPUT doesn't exist : this step cannot run correctly."
+      error_exit "$LINENO: An error has occurred."
+    fi
+  fi
+}
+
+prepareSamples_step_seqcluster() {
+  echo "Continuation of multi-mapped reads analysis (by Seqcluster) :"
+  echo "Prepare samples step"
+  DIR_PREPARE_SAMPLES_OUTPUT="multi_reads_analysis/prepareSamplesStep"
+  if [ "$(ls -1 $DIR_PREPARE_SAMPLES_OUTPUT)" ]
+  then
+    echo "Prepare samples step alredy done."
+    return 0
+  else
+    if [ -s seqclusterPrepareConfiguration.txt ]
+    then
+      rm seqclusterPrepareConfiguration.txt
+    fi
+# Building of the configuration table for Prepare samples step
+    for index in ${!SAMPLE_ARRAY[*]}
+    do
+      WORKING_ANSWER_DEMULTIPLEXING=${ANSWER_DEMULTIPLEXING^^}
+      if [ $WORKING_ANSWER_DEMULTIPLEXING = "YES" ]
+      then
+        SAMPLE=${SAMPLE_ARRAY[$index]}
+      else
+        SAMPLE=$(basename ${SAMPLE_ARRAY[$index]} .fastq)
+      fi
+      echo -e "multi_reads_analysis/${SAMPLE}_collapseStep/${SAMPLE}_SizeSelection_collapsed.fastq"\\t$SAMPLE >> seqclusterPrepareConfiguration.txt
+    done
+    docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v /etc/passwd:/etc/passwd -v ${WORKDIR}:/home -w /home genomicpariscentre/bcbio-nextgen bash -c "/usr/local/bin/seqcluster prepare -c seqclusterPrepareConfiguration.txt -o $DIR_PREPARE_SAMPLES_OUTPUT --minc $MIN_COUNT --minl $MIN_SIZE --maxl $MAX_SIZE --min-shared $MIN_SHARED"
+    if [ $? -ne 0 ]
+    then
+      echo "Error during prepare samples step."
+      error_exit "$LINENO: An error has occurred."
+    fi
+    echo "$DIR_PREPARE_SAMPLES_OUTPUT directory was generated."
+    echo "End of prepare samples step."
+  fi
+}
+
+
+#TODO there is no need to employ Bowtie.
+# Run Bowtie 1 to align reads to rRNA sequences : we get unmapped reads for next steps and mapped reads to have length distribution (Python script using matplotlib) # TODO Try with STAR
+align_To_R_RNA() {
+  for sample in ${SAMPLE_ARRAY[*]}
+  do
+    echo "Starting of mapping to rRNA :"
+    WORKING_ANSWER_DEMULTIPLEXING=${ANSWER_DEMULTIPLEXING^^}
+    if [ $WORKING_ANSWER_DEMULTIPLEXING = "YES" ]
+    then
+      UNMAPPED_RNA_FASTQ_FILE="${sample}_no_rRNA.fastq"
+      MAPPED_RNA_SAM_FILE="${sample}_rRNA_mapped.sam"
+      LOGFILE_BOWTIE="${sample}_rRNA_mapping.log"
+      INPUT_RNA_MAPPING="${sample}_SizeSelection.fastq"
+    else
+      BASENAME=$(basename $sample .fastq)
+      UNMAPPED_RNA_FASTQ_FILE="${BASENAME}_no_rRNA.fastq"
+      MAPPED_RNA_SAM_FILE="${BASENAME}_rRNA_mapped.sam"
+      LOGFILE_BOWTIE="${BASENAME}_rRNA_mapping.log"
+      INPUT_RNA_MAPPING="${BASENAME}_SizeSelection.fastq"
+    fi
+    rRNA_INDEX_BASENAME=$(echo $(basename ${PATH_TO_rRNA_INDEX}/*.1.ebwt | cut -f1 -d'.'))
+    if [ -s $UNMAPPED_RNA_FASTQ_FILE ] && [ -s $MAPPED_RNA_SAM_FILE ]
+    then
+      echo "Mapping to rRNA already done for $sample"
+      #return 0
+    else
+      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home -v $PATH_TO_rRNA_INDEX:/root genomicpariscentre/bowtie1 bash -c "bowtie -p $(nproc) $BOWTIE_OPTIONS $UNMAPPED_RNA_FASTQ_FILE /root/$rRNA_INDEX_BASENAME $INPUT_RNA_MAPPING $MAPPED_RNA_SAM_FILE 2> $LOGFILE_BOWTIE"
+      if [ $? -ne 0 ]
+      then
+        echo "Bowtie1 cannot run correctly ! Check the rRNA index path."
+        error_exit "$LINENO: An error has occurred."
+      fi
+      echo "Log file : $LOGFILE_BOWTIE generated."
+      echo "End of mapping to rRNA."
+    fi
+  done
+}
+
+
+# Run FASTQC on unmapped fastq
+unmmaped_to_rRNA_report() {
+  DIR_UNMAPPED_RRNA_FASTQC="$1_no_rRNA_report"
+  UNMAPPED_RRNA_INPUT="$1_no_rRNA.fastq"
+  if [ -s $UNMAPPED_RRNA_INPUT ]
+  then
+    fastqc_quality_control $DIR_UNMAPPED_RRNA_FASTQC $UNMAPPED_RRNA_INPUT
+  else
+    echo "$UNMAPPED_RRNA_INPUT doesn't exist ! Check your rRNA index path."
+    error_exit "$LINENO: An error has occurred."
+  fi
+}
+
+
+# Filter rRNA from seqs.fastq generated by Seqcluster
+align_To_R_RNA_seqcluster() {
+  echo "Continuation of multi-mapped reads analysis (by Seqcluster) :"
+  echo "Starting of mapping to rRNA for multi-mapped reads analysis :"
+  DIR_RNA_MAPPING="multi_reads_analysis/mappingStep/"
+  UNMAPPED_RNA_FASTQ_FILE="multi_reads_analysis/mappingStep/seqs_no_rRNA.fastq"
+              MAPPED_RNA_SAM_FILE="multi_reads_analysis/mappingStep/seqs_rRNA_mapped.sam"
+  UNMAPPED_RNA_LIST="multi_reads_analysis/mappingStep/seqs_no_rRNA.list"
+  UNMAPPED_RNA_MATRIX="multi_reads_analysis/prepareSamplesStep/seqs_no_rRNA.ma"
+  PREPARE_STEP_MATRIX="multi_reads_analysis/prepareSamplesStep/seqs.ma"
+              LOGFILE="multimapped_analysis_rRNA_mapping.log"
+              INPUT_RNA_MAPPING="multi_reads_analysis/prepareSamplesStep/seqs.fastq"
+  if [ -e $DIR_RNA_MAPPING ]
+  then
+    if [ -s $UNMAPPED_RNA_FASTQ_FILE ] && [ -s $MAPPED_RNA_SAM_FILE ]
+    then
+      echo "Mapping to rRNA for multi-mapped reads analysis already done."
+      return 0
+    fi
+  else
+    rRNA_INDEX_BASENAME=$(echo $(basename ${PATH_TO_rRNA_INDEX}/*.1.ebwt | cut -f1 -d'.'))
+    mkdir -p $DIR_RNA_MAPPING
+    docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home -v $PATH_TO_rRNA_INDEX:/root genomicpariscentre/bowtie1 bash -c "bowtie -p $(nproc) $BOWTIE_OPTIONS $UNMAPPED_RNA_FASTQ_FILE /root/$rRNA_INDEX_BASENAME $INPUT_RNA_MAPPING $MAPPED_RNA_SAM_FILE 2> $LOGFILE"
+    if [ $? -ne 0 ]
+    then
+      echo "Bowtie1 cannot run correctly ! Check the rRNA index path."
+      error_exit "$LINENO: An error has occurred."
+    fi
+    if [ ! -s $UNMAPPED_RNA_MATRIX ]
+    then
+      grep "@seq" $UNMAPPED_RNA_FASTQ_FILE | cut -f2 -d "@" | sort -T $TMPDIR > $UNMAPPED_RNA_LIST
+                        grep "^id" $PREPARE_STEP_MATRIX >> $UNMAPPED_RNA_MATRIX
+      nawk 'FNR==NR{a[$0];next}($1 in a)' $UNMAPPED_RNA_LIST $PREPARE_STEP_MATRIX >> $UNMAPPED_RNA_MATRIX
+    fi
+    if [ $? -ne 0 ]
+    then
+      echo "Cannot generate $UNMAPPED_RNA_MATRIX"
+      error_exit "$LINENO: An error has occurred."
+    fi
+    echo "$UNMAPPED_RNA_MATRIX generated."
+    echo "Log file : $LOGFILE generated."
+    echo "End of mapping to rRNA (for multi-mapped analysis)."
+
+  fi
+}
+
+
+# We run the Python library matplotlib TODO ...no it does not seem to do this...
+mapped_to_R_RNA_distrib_length() {
+  INPUT_SAM_MAPPED_RNA="$1_rRNA_mapped.sam"
+  DISTR_LGT_PDF="$1_mapped2rRNA_read_length_distribution.pdf"
+  if [ -s $DISTR_LGT_PDF ]
+  then
+    return 0
+  else
+    echo "Computing mapped to rRNA reads length distribution..."
+    grep -v '^@' $INPUT_SAM_MAPPED_RNA | awk '{print length($10)}' | $PYTHON_SCRIPTS_PATH$PYTHON_SCRIPT_READ_LENGTH_DISTRIBUTION $DISTR_LGT_PDF -e $INPUT_SAM_MAPPED_RNA
+    if [ ! -s $DISTR_LGT_PDF ]
+    then
+      echo "Cannot compute mapped to rRNA reads length distribution !"
+      error_exit "$LINENO: An error has occurred."
+    fi
+    echo "PDF file : $DISTR_LGT_PDF generated"
+    echo "End of mapping to rRNA reads length distribution."
+  fi
+}
+
+
+#Align to reference genome for the seqcluster reads. (TODO check it... validate it)
+align_to_ref_genome_seqcluster() {
+  echo "Continuation of multi-mapped reads analysis (by Seqcluster) :"
+  echo "Starting of mapping to reference genome for multi-mapped reads analysis :"
+  DIR_MAPPING_GENOME="multi_reads_analysis/mappingStep/"
+  INPUT_MAPPING_GENOME="multi_reads_analysis/mappingStep/seqs_no_rRNA.fastq"
+  if [ -s "multi_reads_analysis/mappingStep/Aligned.out.sam" ]
+  then
+    echo "Mapping to reference genome for multi-mapped reads analysis already done."
+    return 0
+  else
+    docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -v $PATH_TO_GENOME_INDEX:/root -w /home genomicpariscentre/star bash -c "STAR --runThreadN $(nproc) --genomeDir /root --readFilesIn $INPUT_MAPPING_GENOME --outSAMunmapped Within --outFilterMismatchNmax $MAX_ALLOWED_MISMATCHES  --seedSearchStartLmax $SEED_SEARCH_POINT --outFilterScoreMinOverLread $FILTER_SCORE_MIN --outFilterMatchNminOverLread $FILTER_MATCH_MIN --winAnchorMultimapNmax $MAX_LOCI_ALLOWED --outFilterMultimapScoreRange $MULTIMAP_SCORE_RANGE --outFilterMultimapNmax $MULTIMAP_N_MAX --outFileNamePrefix $DIR_MAPPING_GENOME"
+    if [ $? -ne 0 ]
+    then
+      echo "STAR cannot run correcly ! Check your genome index path."
+      error_exit "$LINENO: An error has occurred."
+    fi
+    echo "Outputs generated in $DIR_MAPPING_GENOME"
+    echo "End of mapping to reference genome for multi-mapped reads analysis."
+  fi
+}
