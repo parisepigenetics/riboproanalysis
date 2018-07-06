@@ -19,25 +19,22 @@
 # set -exv
 # Allow to stop the program after an error, BUT doesn't display the error
 
-#### TODO
-# Integrate parameter ANSWER_SPLICING_JUNCTIONS --> if YES let the STAR command line for mapping has it is ; if NO --> DON'T do splcing using --alignIntronMax 1 parameter of STAR
+# TODO Integrate parameter ANSWER_SPLICING_JUNCTIONS --> if YES let the STAR command line for mapping has it is ; if NO --> DON'T do splcing using --alignIntronMax 1 parameter of STAR
 
 # Working directory
 export WORKDIR=$(pwd)
 
-# Default variables
-export SAMPLE_INDEX_ARRAY=(NONE)
+# Default variables FIXME NO default parameters here ALL variables into the parameters file.
 export ANSWER_REMOVE_POLYN_READS=NO
-export ANSWER_DEMULTIPLEXING=NO
 export ANSWER_REMOVE_PCR_DUPLICATES=NO
 export ANSWER_RNASEQ_DATA=NO
-#ANSWER_KEEP_MULTIREAD=NO
-export DIFFERENTIAL_ANALYSIS_PACKAGE=EDGER
-export CHECK_DOCKER_IMAGES=NO
-export ANSWER_PSITE_CORRECTION=YES
-export STOP_EXEC_PSITE_CORRECTION=NO
+export ANSWER_PSITE_CORRECTION=NO
+export STOP_EXEC_PSITE_CORRECTION=YES
 
-# Error exit function
+# Import configuration (.conf) file specified by the user: it overides default variables
+source $1
+
+# Error exit function FIXME it does not work as needed!
 function error_exit {
   PROGNAME=$(basename $@)
   echo "${PROGNAME}: An error has occured at line: ${1}." 1>&2
@@ -144,55 +141,7 @@ then
   error_exit ${LINENO}
 fi
 
-# Tmp directory #TODO check if it is nessecary.
-if [ ! -e tmp/ ]
-then
-  mkdir -p tmp/
-fi
-export TMPDIR=$(readlink -f tmp/)
-
-# Muti-mapped reads analysis directory
-# TODO we will not include that in the final script.
-if [ ! -e multi_reads_analysis/ ]
-then
-  mkdir -p multi_reads_analysis/
-fi
-
-# Import configuration (.conf) file specified by the user: it overides default variables
-source $1
-
-## Scripts
-# Main Bash script
-export MAIN_SCRIPT_CANONICAL_PATH=$(readlink -f $0) ## basename $0
-export CANONICAL_PATH=$(dirname $MAIN_SCRIPT_CANONICAL_PATH)
-
-# Python and R scripts paths
-export PYTHON_SCRIPTS_PATH="${CANONICAL_PATH}/PythonScripts/"
-export R_SCRIPTS_PATH="${CANONICAL_PATH}/RScripts/"
-
-#TODO probably there is NO NEED to have all these parameters as individual params. A call of the name of the script from the containing directory will be enough!
-# TODO Dockerise EVERYTHING!
-# Python scripts
-export PYTHON_SCRIPT_DEMULTIPLEXING="run_demultiplexing.py"
-export PYTHON_SCRIPT_REMOVE_PCR_DUP="rmDupPCR.py"
-export PYTHON_SCRIPT_REMOVE_BAD_IQF="remove_bad_reads_Illumina_passing_filter.py"
-export PYTHON_SCRIPT_READ_LENGTH_DISTRIBUTION="read_length_distribution.py"
-export PYTHON_SCRIPT_SAM_FILTERING="sam_file_filter.py"
-export PYTHON_SCRIPT_LONGEST_TRANSCRIPT="get_longest_transcripts_from_ensembl_gtf.py"
-export PYTHON_SCRIPT_COUNT_CLUSTER="clusterCountings.py"
-export PYTHON_SCRIPT_ADD_START_GTF="add_cds_start_to_gtf.py"
-export PYTHON_SCRIPT_PSITE_AUTOCORRECTION="plastid_psite_offsets_autocorrection.py"
-export PYTHON_SCRIPT_CDS_RANGE_GENERATOR="cds_range_generator.py"
-# R scripts
-export R_SCRIPT_BUILD_COUNTING_TABLE_RNASEQ="RNAseqCountDataMatrix.R"
-export R_SCRIPT_BUILD_COUNTING_TABLE_RP="RPCountDataMatrix.R"
-export R_SCRIPT_ANADIFF_BABEL="babel_RP_differentialAnalysis.R"
-export R_SCRIPT_PERMT_TEST_BABEL="babel_RP_permutationTest.R"
-export R_SCRIPT_ANADIFF_SARTOOLS_DESEQ2="script_DESeq2.R"
-export R_SCRIPT_ANADIFF_SARTOOLS_EDGER="script_edgeR.R"
-
-
-# Check mandatory parameters
+## Check mandatory parameters
 if [ -z $PATH_TO_GENOME_INDEX ]
 then
   echo "Give your genome index path."
@@ -312,7 +261,39 @@ then
   fi
 fi
 
-# Check Docker images
+################### Scripts Section ###################################
+# Main Bash script
+export MAIN_SCRIPT_CANONICAL_PATH=$(readlink -f $0) ## basename $0
+export CANONICAL_PATH=$(dirname $MAIN_SCRIPT_CANONICAL_PATH)
+
+# Python and R scripts paths
+export PYTHON_SCRIPTS_PATH="${CANONICAL_PATH}/PythonScripts/"
+export R_SCRIPTS_PATH="${CANONICAL_PATH}/RScripts/"
+
+#TODO probably there is NO NEED to have all these parameters as individual params. A call of the name of the script from the containing directory will be enough!
+# TODO Dockerise EVERYTHING!
+## Python scripts
+export PYTHON_SCRIPT_DEMULTIPLEXING="run_demultiplexing.py"
+export PYTHON_SCRIPT_REMOVE_PCR_DUP="rmDupPCR.py"
+export PYTHON_SCRIPT_REMOVE_BAD_IQF="remove_bad_reads_Illumina_passing_filter.py"
+export PYTHON_SCRIPT_READ_LENGTH_DISTRIBUTION="read_length_distribution.py"
+export PYTHON_SCRIPT_SAM_FILTERING="sam_file_filter.py"
+export PYTHON_SCRIPT_LONGEST_TRANSCRIPT="get_longest_transcripts_from_ensembl_gtf.py"
+export PYTHON_SCRIPT_COUNT_CLUSTER="clusterCountings.py"
+export PYTHON_SCRIPT_ADD_START_GTF="add_cds_start_to_gtf.py"
+export PYTHON_SCRIPT_PSITE_AUTOCORRECTION="plastid_psite_offsets_autocorrection.py"
+export PYTHON_SCRIPT_CDS_RANGE_GENERATOR="cds_range_generator.py"
+## R scripts
+export R_SCRIPT_BUILD_COUNTING_TABLE_RNASEQ="RNAseqCountDataMatrix.R"
+export R_SCRIPT_BUILD_COUNTING_TABLE_RP="RPCountDataMatrix.R"
+export R_SCRIPT_ANADIFF_BABEL="babel_RP_differentialAnalysis.R"
+export R_SCRIPT_PERMT_TEST_BABEL="babel_RP_permutationTest.R"
+export R_SCRIPT_ANADIFF_SARTOOLS_DESEQ2="script_DESeq2.R"
+export R_SCRIPT_ANADIFF_SARTOOLS_EDGER="script_edgeR.R"
+
+
+
+## Docker images
 # TODO UPDATE ALL docker images and make them all available from Paris Epigenetics.
 export WORKING_CHECK_DOCKER_IMAGES=${CHECK_DOCKER_IMAGES^^}
 if [ ! $WORKING_CHECK_DOCKER_IMAGES = NO ]
@@ -321,8 +302,10 @@ then
   then
     docker pull parisepigenetics/fastqc
     docker pull parisepigenetics/cutadapt
-    docker pull genomicpariscentre/bowtie
+    docker pull parisepigenetics/multiqc
+#    docker pull genomicpariscentre/bowtie
     docker pull parisepigenetics/star
+
     docker pull genomicpariscentre/samtools
     docker pull genomicpariscentre/gff3-ptools
     docker pull genomicpariscentre/htseq
@@ -341,25 +324,24 @@ then
 fi
 
 
-### Tools parameters
-
-## 3' trimming : Cutadapt
+## Tools parameters
+# Size selection: Cutadapt
 export MIN_READ_LENGTH="25"
-export MAX_READ_LENGTH="45"
+export MAX_READ_LENGTH="35"
 export FILTER_MAX_N="2"
 
-## Prepare samples step : Seqcluster
+## Prepare samples step: Seqcluster
 export MIN_COUNT="2"
 export MIN_SIZE="25"
 export MAX_SIZE="35"
 export MIN_SHARED="2"
 
-## Align to rRNA sequences : Bowtie 1
+## Align to rRNA sequences: Bowtie 1
 # TODO I do not know if we need to use yet another aligner to filter the rDNA. We can use just one (either STAR or hisat2) and then remove the rDNA from the annotaions.
 # Bowtie 1 Options details : -q --> Fastq file as input ; --un --> write unaligned reads to another file (.fastq) ; -S --> write hits in SAM format
 export BOWTIE_OPTIONS="-q -S --un"
 
-## Align to reference genome : STAR
+## Align to reference genome: STAR
 export MAX_ALLOWED_MISMATCHES="2"  # alignment will be output only if it has no more mismatches than this value
 export SEED_SEARCH_POINT="16"  # defines the search start point through the read - the read is split into pieces no longer than this value
 export FILTER_SCORE_MIN="0"  # alignment will be output if its ratio of score to *read* length is higher than this value
@@ -387,12 +369,27 @@ export IDATTR="gene_id" ## Ok for Secluster-clustering step
 export FILETYPE="bam"
 
 
-#### FUNCTIONS ########################################################
+## Manage output directories
+if [ ! -e logFiles/ ]
+then
+   mkdir -p logFiles/
+fi
+export LOGDIR=$(readlink -f logFiles/)/
+
+if [ ! -e QC/ ]
+then
+   mkdir -p QC/
+fi
+export QCDIR=$(readlink -f QC/)/
+
+
+################### FUNCTIONS #########################################
 #FIXME ALL I mean ALL the scripts we use will be dockerised (including Python and R scripts.)
 
 # Run demultiplexing to get Fastq files
 # $1 = SAMPLE $2 = ADAPTER
 demultiplexing() {
+  echo "Demultiplexing of ${1}..."
   WORKING_ANSWER_DEMULTIPLEXING=${ANSWER_DEMULTIPLEXING^^}
   if [ $WORKING_ANSWER_DEMULTIPLEXING = YES ]
   then
@@ -401,14 +398,14 @@ demultiplexing() {
       echo "Give the path to your multiplexed FASTQ file."
       error_exit ${LINENO}
     fi
-    LOGFILE="$1_demultiplexing.log"
-    OUTFILE="$1_demultiplex.fastq"
-    if [ -s $LOGFILE ]
+    LOGFILE="${1}_demultiplexing.log"
+    OUTFILE="${1}_demultiplex.fastq"
+    if [ -s $OUTFILE ]
     then
+      echo "Demultiplexing already done for ${1}"
       return 0
     else
-      echo "Starting of demultiplexing :"
-      $PYTHON_SCRIPT_DEMULTIPLEXING -i $PATH_TO_RAW_UNDEMULTIPLEXED_FILE -o $OUTFILE -a $2 > $LOGFILE
+      $PYTHON_SCRIPTS_PATH$PYTHON_SCRIPT_DEMULTIPLEXING -i $PATH_TO_RAW_UNDEMULTIPLEXED_FILE -o $OUTFILE -a $2 > $LOGDIR$LOGFILE
       if [ $? -ne 0 ]
       then
         echo "run_demultiplexing cannot run correctly ! Check your mutliplexed FASTQ path and your index adapter sequence."
@@ -428,6 +425,7 @@ demultiplexing() {
 fastqc_quality_control() {
   if [ "$(ls -1 $1)" ]
   then
+    echo "Quality control already done"
     return 0
   else
     mkdir -p $1
@@ -436,9 +434,8 @@ fastqc_quality_control() {
       echo "$1 image cannot be created !"
       error_exit ${LINENO}
     fi
-      echo "Running FastQC..."
-        echo "docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -w /home genomicpariscentre/fastqc -o $1 $2"
-        docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -w /home genomicpariscentre/fastqc -o $1 $2
+      #echo "docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -w /home genomicpariscentre/fastqc -o $1 $2"
+      docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -w /home parisepigenetics/fastqc -o $1 $2
       if [ $? -ne 0 ]
       then
         echo "FastQC cannot run correctly ! $@"
@@ -450,8 +447,8 @@ fastqc_quality_control() {
 
 
 # Run FastQC for quality control of the demultiplexed files.
-#TODO This function can be renamed raw_quality_control_report() ALSO this step can be merged with the previous one.
 raw_quality_report() {
+  echo "Raw quality control for ${1}..."
   WORKING_ANSWER_DEMULTIPLEXING=${ANSWER_DEMULTIPLEXING^^}
   if [ $WORKING_ANSWER_DEMULTIPLEXING = YES ]
   then
@@ -464,7 +461,7 @@ raw_quality_report() {
   then
     RAW_FASTQ_REPORT=$(basename $DIR_RAW_FASTQ_REPORT)
     INPUT_RAW_FASTQ=$(basename $INPUT_RAW_FASTQ_PATH)
-    fastqc_quality_control $RAW_FASTQ_REPORT $INPUT_RAW_FASTQ
+    fastqc_quality_control $QCDIR$RAW_FASTQ_REPORT $INPUT_RAW_FASTQ
   else
     echo "$INPUT_RAW_FASTQ_PATH doesn't exist ! Check your SAMPLE_ARRAY."
     error_exit ${LINENO}
@@ -474,242 +471,202 @@ raw_quality_report() {
 
 # Remove bad passing filter reads
 removeBadIQF() {
+  echo "Remove bad IQF reads from ${1}..."
   WORKING_ANSWER_DEMULTIPLEXING=${ANSWER_DEMULTIPLEXING^^}
   if [ $WORKING_ANSWER_DEMULTIPLEXING = YES ]
   then
-    INPUT_FASTQ="$1_demultiplex.fastq"
+    INPUT_FASTQ="${1}_demultiplex.fastq"
   else
-    INPUT_FASTQ="$1.fastq"
+    INPUT_FASTQ="${1}.fastq"
   fi
-  LOGFILE="$1_rmIQF.log"
-  RM_BADIQF_OUTPUT="$1_rmIQF.fastq"
-  if [ -s $LOGFILE ] && [ -s $RM_BADIQF_OUTPUT ]
+  LOGFILE="${1}_rmIQF.log"
+  RM_BADIQF_OUTPUT="${1}_rmIQF.fastq"
+  if [ -s $RM_BADIQF_OUTPUT ]
   then
-    echo "Filtering on Illumina Quality Filter already done."
+    echo "Illumina Quality Filtering already done for ${1}."
     return 0
   else
-    echo "Removing bad IQF :"
-    $PYTHON_SCRIPTS_PATH$PYTHON_SCRIPT_REMOVE_BAD_IQF -i $INPUT_FASTQ -o $RM_BADIQF_OUTPUT > $LOGFILE
+    $PYTHON_SCRIPTS_PATH$PYTHON_SCRIPT_REMOVE_BAD_IQF $INPUT_FASTQ $RM_BADIQF_OUTPUT 2> $LOGDIR$LOGFILE
     if [ $? -ne 0 ]
     then
-      echo "Removing bad IQF cannot run correctly !"
-      error_exit "$LINENO: An error has occurred."
+      echo "Removing bad IQF cannot run correctly!"
+      error_exit "${LINENO}: An error has occurred."
     fi
-    echo "Log file : $LOGFILE generated"
+    echo "Log file: $LOGFILE generated"
     echo "End of removing bad IQF"
   fi
 }
 
-
-# Check remove bad passing filter
-removeBadIQF_report() {
-  RM_BADIQF_DIR=$(basename "$1_rmIQF_report")
-  RM_IQF_INPUT=$(basename "$1_rmIQF.fastq")
-  if [ -s $RM_IQF_INPUT ]
-  then
-    fastqc_quality_control $RM_BADIQF_DIR $RM_IQF_INPUT
-  else
-    echo "$RM_IQF_INPUT doesn't exist"
-    error_exit "$LINENO: An error has occurred."
-  fi
-}
-
-
-# Remove PCR duplicates --> % Amplification in log file
-# TODO Can be replaced by UMI-tools
-removePCRduplicates() {
-  WORKING_ANSWER_REMOVE_PCR_DUPLICATES=${ANSWER_REMOVE_PCR_DUPLICATES^^}
-  if [ $WORKING_ANSWER_REMOVE_PCR_DUPLICATES = "YES" ]
-  then
-    LOGFILE="$1_rmPCR.log"
-    RM_PCRDUP_OUTPUT="$1_rmPCR.fastq"
-    RM_PCRDUP_INPUT="$1_rmIQF.fastq"
-    if [ -s $RM_PCRDUP_INPUT ]
-    then
-      if [ -s $RM_PCRDUP_OUTPUT ] && [ -s $LOGFILE ]
-      then
-        return 0
-      else
-        echo "Removing PCR duplicates :"
-        awk '{ i=(NR-1) % 4; tab[i]=$0 ; if (i==3) { print tab[1]"\t"tab[0]"\t"tab[3]"\t"tab[2]} }' $RM_PCRDUP_INPUT | sort | $PYTHON_SCRIPTS_PATH$PYTHON_SCRIPT_REMOVE_PCR_DUP $RM_PCRDUP_OUTPUT > $LOGFILE
-        if [ ! -s $RM_PCRDUP_OUTPUT ]
-        then
-          echo "Cannot run rmDupPCR correctly !"
-          error_exit "$LINENO: An error has occurred."
-        fi
-        echo "Log file : $LOGFILE generated."
-        echo "End of PCR duplicates removing."
-      fi
-    else
-      echo "You need a file which was filtered on bad Illumina Qualitiy Filter (_rmIQF.fastq) !"
-      error_exit "$LINENO: An error has occurred."
-    fi
-  else
-    return 0
-  fi
-}
+# # Remove PCR duplicates --> % Amplification in log file
+# # TODO Can be replaced by UMI-tools
+# removePCRduplicates() {
+#   WORKING_ANSWER_REMOVE_PCR_DUPLICATES=${ANSWER_REMOVE_PCR_DUPLICATES^^}
+#   if [ $WORKING_ANSWER_REMOVE_PCR_DUPLICATES = "YES" ]
+#   then
+#     LOGFILE="$1_rmPCR.log"
+#     RM_PCRDUP_OUTPUT="$1_rmPCR.fastq"
+#     RM_PCRDUP_INPUT="$1_rmIQF.fastq"
+#     if [ -s $RM_PCRDUP_INPUT ]
+#     then
+#       if [ -s $RM_PCRDUP_OUTPUT ] && [ -s $LOGFILE ]
+#         then
+#           echo "Removal of PCR duplicates already done. (house script)"
+#         return 0
+#       else
+#         echo "Removing PCR duplicates :"
+#         awk '{ i=(NR-1) % 4; tab[i]=$0 ; if (i==3) { print tab[1]"\t"tab[0]"\t"tab[3]"\t"tab[2]} }' $RM_PCRDUP_INPUT | sort | $PYTHON_SCRIPTS_PATH$PYTHON_SCRIPT_REMOVE_PCR_DUP $RM_PCRDUP_OUTPUT > $LOGFILE
+#         if [ ! -s $RM_PCRDUP_OUTPUT ]
+#         then
+#           echo "Cannot run rmDupPCR correctly !"
+#           error_exit "$LINENO: An error has occurred."
+#         fi
+#         echo "Log file : $LOGFILE generated."
+#         echo "End of PCR duplicates removing."
+#       fi
+#     else
+#       echo "You need a file which was filtered on bad Illumina Qualitiy Filter (_rmIQF.fastq) !"
+#       error_exit "$LINENO: An error has occurred."
+#     fi
+#   else
+#     return 0
+#   fi
+# }
 
 
 # Run the 5' trimming
 index_Adapter_trimming() {
+  echo "Index 5' adapter trimming..."
   WORKING_ANSWER_REMOVE_PCR_DUPLICATES=${ANSWER_REMOVE_PCR_DUPLICATES^^}
   WORKING_ANSWER_DEMULTIPLEXING=${ANSWER_DEMULTIPLEXING^^}
   if [ $WORKING_ANSWER_DEMULTIPLEXING = YES ]
   then
-    INDEX_TRIM_OUTPUT=$(basename "$1_TrimIndex.fastq")
+    INDEX_TRIM_OUTPUT=$(basename "${1}_TrimIndex.fastq")
     if [ $WORKING_ANSWER_REMOVE_PCR_DUPLICATES = YES ]
     then
-      INDEX_TRIM_INPUT=$(basename "$1_rmPCR.fastq")
+      INDEX_TRIM_INPUT=$(basename "${1}_rmPCR.fastq")
     else
-      INDEX_TRIM_INPUT=$(basename "$1_rmIQF.fastq")
+      INDEX_TRIM_INPUT=$(basename "${1}_rmIQF.fastq")
     fi
     INDEX_LENGTH=$(expr length $2)
-    LOGFILE="$1_TrimIndex.log"
+    LOGFILE="${1}_TrimIndex.log"
     if [ -s $INDEX_TRIM_OUTPUT ]
     then
+      echo "Index trimming already done for ${1}."
       return 0
     else
-      echo "Index adapter trimming :"
-      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home genomicpariscentre/cutadapt bash -c "cutadapt -u $INDEX_LENGTH -o $INDEX_TRIM_OUTPUT $INDEX_TRIM_INPUT" > $LOGFILE
+      docker run --rm -u $(id -u):$(id -g) -v $TMPDIR:/tmp -v $WORKDIR:/home -w /home parisepigenetics/cutadapt bash -c "cutadapt -u $INDEX_LENGTH -o $INDEX_TRIM_OUTPUT $INDEX_TRIM_INPUT" > $LOGDIR$LOGFILE
       if [ ! -s $INDEX_TRIM_OUTPUT ]
       then
         echo "Index adapter trimming cannot run correctly !"
         error_exit "$LINENO: An error has occurred."
       fi
       echo "Log file : $LOGFILE generated."
-      echo "End of index adapter trimming."
+      echo "End of 5' index adapter trimming."
     fi
   else
+    echo "No demultiplexing, no need for 5' adapter trimming."
     return 0
   fi
 }
 
 
-# Check the 5' trimming
-index_Adapter_trimming_report() {
-  WORKING_ANSWER_DEMULTIPLEXING=${ANSWER_DEMULTIPLEXING^^}
-  if [ $WORKING_ANSWER_DEMULTIPLEXING = "YES" ]
-  then
-    DIR_INDEX_TRIM_FASTQC="$1_TrimIndex_report"
-    INDEX_TRIM_INPUT="$1_TrimIndex.fastq"
-    if [ -s $INDEX_TRIM_INPUT ]
-    then
-      fastqc_quality_control $DIR_INDEX_TRIM_FASTQC $INDEX_TRIM_INPUT
-    else
-      echo "$INDEX_TRIM_INPUT doesn't exist"
-      error_exit "$LINENO: An error has occurred."
-    fi
-  fi
-}
-
-
-# Run Cutadapt for the 3' trimming
+# Sequencing adapter 3' trimming
 threePrime_trimming() {
+  echo "Sequencing 3' adapter trimming..."
   WORKING_ANSWER_DEMULTIPLEXING=${ANSWER_DEMULTIPLEXING^^}
   WORKING_ANSWER_REMOVE_PCR_DUPLICATES=${ANSWER_REMOVE_PCR_DUPLICATES^^}
   WORKING_ANSWER_REMOVE_POLYN_READS=${ANSWER_REMOVE_POLYN_READS^^}
   if [ $WORKING_ANSWER_DEMULTIPLEXING = "YES" ]
   then
-    THREEPRIME_TRIM_INPUT=$(basename "$1_TrimIndex.fastq")
+    THREEPRIME_TRIM_INPUT=$(basename "${1}_TrimIndex.fastq")
   else
     if [ $WORKING_ANSWER_REMOVE_PCR_DUPLICATES = "YES" ]
     then
-      THREEPRIME_TRIM_INPUT=$(basename "$1_rmPCR.fastq")
+      THREEPRIME_TRIM_INPUT=$(basename "${1}_rmPCR.fastq")
     else
-      THREEPRIME_TRIM_INPUT=$(basename "$1_rmIQF.fastq")
+      THREEPRIME_TRIM_INPUT=$(basename "${1}_rmIQF.fastq")
     fi
   fi
-  THREEPRIME_TRIM_OUTPUT=$(basename "$1_ThreePrime_Trim.fastq")
-  LOGFILE=$(basename "$1_ThreePrimeTrim.log")
-  if [ -s $THREEPRIME_TRIM_OUTPUT ] && [ -s $LOGFILE ]
+  THREEPRIME_TRIM_OUTPUT=$(basename "${1}_ThreePrime_Trim.fastq")
+  LOGFILE=$(basename "${1}_ThreePrimeTrim.log")
+  if [ -s $THREEPRIME_TRIM_OUTPUT ]
   then
+    echo "Three prime trimming already done for ${1}."
     return 0
   else
-    echo "3' trimming :"
     if [ $WORKING_ANSWER_REMOVE_POLYN_READS = "YES" ]
     then
-      docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -w /home genomicpariscentre/cutadapt bash -c "cutadapt -a $2 --discard-untrimmed --max-n $FILTER_MAX_N -o $THREEPRIME_TRIM_OUTPUT $THREEPRIME_TRIM_INPUT > $LOGFILE"
+      docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -w /home parisepigenetics/cutadapt bash -c "cutadapt -a $2 --discard-untrimmed --max-n $FILTER_MAX_N -o $THREEPRIME_TRIM_OUTPUT $THREEPRIME_TRIM_INPUT > $LOGDIR$LOGFILE"
     else
-      docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -w /home genomicpariscentre/cutadapt bash -c "cutadapt -a $2 --discard-untrimmed -o $THREEPRIME_TRIM_OUTPUT $THREEPRIME_TRIM_INPUT > $LOGFILE"
+      docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -w /home parisepigenetics/cutadapt bash -c "cutadapt -a $2 --discard-untrimmed -o $THREEPRIME_TRIM_OUTPUT $THREEPRIME_TRIM_INPUT > $LOGDIR$LOGFILE"
     fi
     if [ $? -ne 0 ]
     then
-      echo "Cutadapt cannot run correctly !"
+      echo "Cutadapt 3' trimming cannot run correctly !"
       error_exit "$LINENO: An error has occurred."
     fi
-    echo "Log file : $LOGFILE generated."
-    echo "End of Cutadapt."
-  fi
-}
-
-
-# Check the 3' trimming
-threePrime_trimming_report() {
-  DIR_THREEPRIME_TRIM_FASTQC=$(basename "$1_ThreePrime_Trim_report")
-  THREEPRIME_TRIM_INPUT=$(basename "$1_ThreePrime_Trim.fastq")
-  if [ -s $THREEPRIME_TRIM_INPUT ]
-  then
-    fastqc_quality_control $DIR_THREEPRIME_TRIM_FASTQC $THREEPRIME_TRIM_INPUT
-  else
-    echo "$THREEPRIME_TRIM_INPUT doesn't exist"
-    error_exit "$LINENO: An error has occurred."
+    echo "Log file: $LOGFILE generated."
+    echo "End of 3' trimming Cutadapt."
   fi
 }
 
 
 # Perform size selection.
 size_Selection() {
+  echo "Size selection with cutadapt..."
   WORKING_ANSWER_DEMULTIPLEXING=${ANSWER_DEMULTIPLEXING^^}
   WORKING_ANSWER_REMOVE_PCR_DUPLICATES=${ANSWER_REMOVE_PCR_DUPLICATES^^}
   if [ $WORKING_ANSWER_DEMULTIPLEXING = "YES" ]
   then
-    THREEPRIME_TRIM_INPUT="$1_ThreePrime_Trim.fastq"
-    SIZE_SELECT_OUTPUT="$1_SizeSelection.fastq"
-    LOGFILE="$1_SizeSelection.log"
+    THREEPRIME_TRIM_INPUT="${1}_ThreePrime_Trim.fastq"
+    SIZE_SELECT_OUTPUT="${1}_SizeSelection.fastq"
+    LOGFILE="${1}_SizeSelection.log"
   else
-    BASENAME=$(basename $1 .f*q)
+    BASENAME=$(basename ${1} .f*q)
     THREEPRIME_TRIM_INPUT="${BASENAME}_ThreePrime_Trim.fastq"
     SIZE_SELECT_OUTPUT="${BASENAME}_SizeSelection.fastq"
     LOGFILE="${BASENAME}_SizeSelection.log"
   fi
-  if [ -s $THREEPRIME_TRIM_OUTPUT ] && [ -s $LOGFILE ]
+  if [ -s $THREEPRIME_TRIM_OUTPUT ]
   then
+    echo "Size selection already done."
     return 0
   else
-    echo "Size selection :"
-    docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -w /home genomicpariscentre/cutadapt bash -c "cutadapt -m $MIN_READ_LENGTH -M $MAX_READ_LENGTH -o $SIZE_SELECT_OUTPUT $THREEPRIME_TRIM_INPUT > $LOGFILE"
+    docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -w /home parisepigenetics/cutadapt bash -c "cutadapt -m $MIN_READ_LENGTH -M $MAX_READ_LENGTH -o $SIZE_SELECT_OUTPUT $THREEPRIME_TRIM_INPUT > $LOGDIR$LOGFILE"
     if [ $? -ne 0 ]
     then
       echo "Cutadapt cannot run correctly !"
       error_exit "$LINENO: An error has occurred."
     fi
-    echo "Log file : $LOGFILE generated."
-    echo "End of Cutadapt."
+    echo "Log file: $LOGFILE generated."
+    echo "End of size selection with Cutadapt."
   fi
 }
 
 
-# We shake (TODO, what shake means here...??) the size selection
+# Size selection quality control report
 size_Selection_report() {
-  DIR_SIZE_SELECT_FASTQC=$(basename "$1_Size_Selection_report")
-  SIZE_SELECT_INPUT=$(basename "$1_SizeSelection.fastq")
-  if [ -s $SIZE_SELECT_INPUT ]
+  echo "Size selection quality control for ${1}..."
+  FASTQC_REPORT_DIR="${1}_sizeSelection_report/"
+  INPUT_FASTQ="${1}_SizeSelection.fastq"
+  if [ -s $INPUT_RAW_FASTQ ]
   then
-    fastqc_quality_control $DIR_SIZE_SELECT_FASTQC $SIZE_SELECT_INPUT
+    FASTQC_REPORT_DIR=$(basename $FASTQC_REPORT_DIR)
+    INPUT_FASTQ=$(basename $INPUT_FASTQ)
+    fastqc_quality_control $QCDIR$FASTQC_REPORT_DIR $INPUT_FASTQ
   else
-    echo "$SIZE_SELECT_INPUT doesn't exist"
-    error_exit "$LINENO: An error has occurred."
+    echo "$INPUT_FASTQ does not exist! Check your SAMPLE_ARRAY, and your Seze Selection process."
+    error_exit ${LINENO}
   fi
 }
-
-#TODO, after ALL these calls to fastqc integrate all the reporst with MUltiQC! FIXME
 
 
 # Run STAR to align reads to the reference genome
 align_to_ref_genome() {
+  echo "Genome alignments with STAR..."
   for sample in ${SAMPLE_ARRAY[*]}
   do
-    echo "Start mapping to reference genome :"
+    echo "Start mapping ${sample} to reference genome..."
     WORKING_ANSWER_DEMULTIPLEXING=${ANSWER_DEMULTIPLEXING^^}
     if [ $WORKING_ANSWER_DEMULTIPLEXING = YES ]
     then
@@ -724,8 +681,8 @@ align_to_ref_genome() {
     then
       if [ -s "${DIR_ALIGN_STAR}Log.final.out" ]
       then
-        echo "Mapping already done for $sample."
-        #return 0
+        echo "Mapping already done for ${sample}."
+        continue
       fi
     else
       mkdir -p $DIR_ALIGN_STAR
@@ -735,20 +692,37 @@ align_to_ref_genome() {
         error_exit "$LINENO: An error has occurred."
       fi
       #TODO check optimal STAR alignment parameters.
-      echo "Start STAR alignment!"
-      echo "docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -v $PATH_TO_GENOME_INDEX:/root -w /home parisepigenetics/star bash -c STAR --runThreadN $(nproc) --genomeDir /root --readFilesIn $INPUT_ALIGN_GENOME --outFileNamePrefix $DIR_ALIGN_STAR --outSAMunmapped Within --outFilterMultimapNmax 20 --outSAMprimaryFlag AllBestScore --twopassMode Basic --outSAMtype BAM SortedByCoordinate --quantMode TranscriptomeSAM GeneCounts --outStd Log --seedSearchStartLmaxOverLread 0.5 --winAnchorMultimapNmax 25 --outFilterScoreMinOverLread 0.5 --outFilterMatchNminOverLread 0.5"
-      docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -v $PATH_TO_GENOME_INDEX:/root -w /home parisepigenetics/star bash -c "STAR --runThreadN $(nproc) --genomeDir /root --readFilesIn $INPUT_ALIGN_GENOME --outFileNamePrefix $DIR_ALIGN_STAR --outSAMunmapped Within --outFilterMultimapNmax 20 --outSAMprimaryFlag AllBestScore --twopassMode Basic --outSAMtype BAM SortedByCoordinate --quantMode TranscriptomeSAM GeneCounts --outStd Log --seedSearchStartLmaxOverLread 0.5 --winAnchorMultimapNmax 25 --outFilterScoreMinOverLread 0.5 --outFilterMatchNminOverLread 0.5"
+      #echo "docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -v $PATH_TO_GENOME_INDEX:/root -w /home parisepigenetics/star bash -c STAR --runThreadN $(nproc) --genomeDir /root --readFilesIn $INPUT_ALIGN_GENOME --outFileNamePrefix $DIR_ALIGN_STAR --limitBAMsortRAM 49000000 --outSAMunmapped Within --outFilterMultimapNmax 20 --outSAMprimaryFlag AllBestScore --twopassMode Basic --outSAMtype BAM SortedByCoordinate --quantMode TranscriptomeSAM GeneCounts --outStd Log --seedSearchStartLmaxOverLread 0.5 --winAnchorMultimapNmax 25 --outFilterScoreMinOverLread 0.5 --outFilterMatchNminOverLread 0.5"
+      docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -v $PATH_TO_GENOME_INDEX:/root -w /home parisepigenetics/star bash -c "STAR --runThreadN $(nproc) --genomeDir /root --readFilesIn $INPUT_ALIGN_GENOME --outFileNamePrefix $DIR_ALIGN_STAR --outSAMunmapped Within --outFilterMultimapNmax 20 --outSAMprimaryFlag AllBestScore --twopassMode Basic --outSAMtype BAM SortedByCoordinate --quantMode TranscriptomeSAM GeneCounts --outStd Log --seedSearchStartLmaxOverLread 0.5 --winAnchorMultimapNmax 25 --outFilterScoreMinOverLread 0.5 --outFilterMatchNminOverLread 0.5 --limitBAMsortRAM 48000000000 --quantTranscriptomeBan Singleend"
       # OLD_CALL docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -v $PATH_TO_GENOME_INDEX:/root -w /home genomicpariscentre/star bash -c "STAR --runThreadN $(nproc) --genomeDir /root --readFilesIn $INPUT_ALIGN_GENOME --outFileNamePrefix $DIR_ALIGN_STAR --outSAMunmapped Within --outFilterMismatchNmax $MAX_ALLOWED_MISMATCHES --quantMode TranscriptomeSAM --seedSearchStartLmax $SEED_SEARCH_POINT --outFilterScoreMinOverLread $FILTER_SCORE_MIN --outFilterMatchNminOverLread $FILTER_MATCH_MIN --winAnchorMultimapNmax $MAX_LOCI_ALLOWED --outFilterMultimapScoreRange $MULTIMAP_SCORE_RANGE"
       if [ ! -s "${DIR_ALIGN_STAR}ReadsPerGene.out.tab" ]
       then
         echo "STAR did not run correctly ! Check your files and directories."
         error_exit "$LINENO: An error has occurred."
       fi
-      echo "Directory $DIR_ALIGN_STAR generated"
+      echo "$DIR_ALIGN_STAR generated"
       echo "End of mapping to reference genome."
     fi
   done
 }
+
+
+# Generate the MultiQC report.
+multiqc_report(){
+  echo "Generating the MultiQC collective report..."
+  if [ -s multiqc_report.html ]
+  then
+    echo "MultiQC report exists."
+    return 0
+  else
+    docker run --rm -u $(id -u):$(id -g) -v $WORKDIR:/home -w /home parisepigenetics/multiqc bash -c "multiqc -f ."
+  fi
+  echo "MultiQC report fished."
+}
+
+
+
+
 
 
 # Performe the metagene analysis
@@ -1511,16 +1485,13 @@ anadif_clusters() {
 }
 
 # Export functions so that they will be available to parallel.
-export -f fastqc_quality_control
 export -f demultiplexing
+export -f fastqc_quality_control
 export -f raw_quality_report
 export -f removeBadIQF
-export -f removeBadIQF_report
-export -f removePCRduplicates
+#export -f removePCRduplicates
 export -f index_Adapter_trimming
-export -f index_Adapter_trimming_report
 export -f threePrime_trimming
-export -f threePrime_trimming_report
 export -f size_Selection
 export -f size_Selection_report
 #export -f collapse_step_seqcluster
@@ -1529,6 +1500,8 @@ export -f size_Selection_report
 #export -f align_To_R_RNA_seqcluster
 #export -f mapped_to_R_RNA_distrib_length
 export -f align_to_ref_genome
+export -f multiqc_report
+##
 export -f metagene_analysis
 #export -f align_to_ref_genome_seqcluster
 export -f samFiltering
@@ -1539,9 +1512,9 @@ export -f p_offset_analysis
 export -f rna_seq_quantification
 export -f cds_range_building
 export -f isoform_level_estimation
-export -f sam_to_bam_seqcluster
-export -f clustering_step_seqcluster
-export -f report_step_seqcluster
+#export -f sam_to_bam_seqcluster
+#export -f clustering_step_seqcluster
+#xport -f report_step_seqcluster
 export -f get_longest_transcripts_from_annotations
 export -f htseq_count
 export -f build_rnaseq_ribopro_counting_tables
@@ -1551,6 +1524,8 @@ export -f anadif_clusters
 
 
 ### MAIN ###
+echo "START PREPROCESSING AND QC --------------------------------------"
+
 parallel --no-notice --xapply demultiplexing ::: $WORKING_SAMPLE_ARRAY ::: $WORKING_SAMPLE_INDEX_ARRAY
 if [ $? -ne 0 ]
 then
@@ -1573,19 +1548,12 @@ then
 fi
 wait
 
-parallel --no-notice removeBadIQF_report {.} ::: $WORKING_SAMPLE_ARRAY
-if [ $? -ne 0 ]
-then
-  error_exit "$LINENO: removeBadIQF_report An error has occurred."
-fi
-wait
-
-parallel --no-notice removePCRduplicates {.} ::: $WORKING_SAMPLE_ARRAY
-if [ $? -ne 0 ]
-then
-  error_exit "$LINENO: removePCRduplicates An error has occurred."
-fi
-wait
+# parallel --no-notice removePCRduplicates {.} ::: $WORKING_SAMPLE_ARRAY
+# if [ $? -ne 0 ]
+# then
+#   error_exit "$LINENO: removePCRduplicates An error has occurred."
+# fi
+# wait
 
 parallel --no-notice --xapply index_Adapter_trimming {.} ::: $WORKING_SAMPLE_ARRAY ::: $WORKING_SAMPLE_INDEX_ARRAY
 if [ $? -ne 0 ]
@@ -1594,24 +1562,10 @@ then
 fi
 wait
 
-parallel --no-notice index_Adapter_trimming_report {.} ::: $WORKING_SAMPLE_ARRAY
-if [ $? -ne 0 ]
-then
-  error_exit "$LINENO: index_Adapter_trimming_report An error has occurred."
-fi
-wait
-
 parallel --no-notice --xapply threePrime_trimming {.} ::: $WORKING_SAMPLE_ARRAY ::: $ADAPTER_SEQUENCE_THREE_PRIME
 if [ $? -ne 0 ]
 then
   error_exit "$LINENO: threePrime_trimming An error has occurred."
-fi
-wait
-
-parallel --no-notice threePrime_trimming_report {.} ::: $WORKING_SAMPLE_ARRAY
-if [ $? -ne 0 ]
-then
-  error_exit "$LINENO: threePrime_trimming_report An error has occurred."
 fi
 wait
 
@@ -1629,49 +1583,7 @@ then
 fi
 wait
 
-# parallel --no-notice collapse_step_seqcluster {.} ::: $WORKING_SAMPLE_ARRAY
-# if [ $? -ne 0 ]
-# then
-#   error_exit "$LINENO: collapse_step_seqcluster An error has occurred."
-# fi
-# wait
-
-# prepareSamples_step_seqcluster
-# if [ $? -ne 0 ]
-# then
-#   error_exit "$LINENO: prepareSamples_step_seqcluster An error has occurred."
-# fi
-# wait
-
-# align_To_R_RNA
-# if [ $? -ne 0 ]
-# then
-#   error_exit "$LINENO: align_To_R_RNA An error has occurred."
-# fi
-# wait
-
-# parallel --no-notice unmmaped_to_rRNA_report {.} ::: $WORKING_SAMPLE_ARRAY
-# if [ $? -ne 0 ]
-# then
-#   error_exit "$LINENO: align_To_R_RNA An error has occurred."
-# fi
-# wait
-
-# align_To_R_RNA_seqcluster
-# if [ $? -ne 0 ]
-# then
-#   error_exit "$LINENO: align_To_R_RNA_seqcluster An error has occurred."
-# fi
-# wait
-
-# parallel --no-notice mapped_to_R_RNA_distrib_length {.} ::: $WORKING_SAMPLE_ARRAY
-# if [ $? -ne 0 ]
-# then
-#   error_exit "$LINENO: mapped_to_R_RNA_distrib_length An error has occurred."
-# fi
-# wait
-
-echo "START ANALYSIS ------------------------------------"
+echo "START SEQUENCE ANALYSIS -----------------------------------------"
 
 align_to_ref_genome
 if [ $? -ne 0 ]
@@ -1680,7 +1592,16 @@ then
 fi
 wait
 
+multiqc_report
+if [ $? -ne 0 ]
+then
+  error_exit "$LINENO: multiqc_report An error has occurred."
+fi
+wait
+
 exit 1
+
+
 
 metagene_analysis
 if [ $? -ne 0 ]
