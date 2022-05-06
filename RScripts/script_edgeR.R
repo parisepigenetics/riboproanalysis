@@ -1,3 +1,5 @@
+#!/usr/bin/env Rscript
+
 ################################################################################
 ### R script to compare several conditions with the SARTools and edgeR packages
 ### Hugo Varet

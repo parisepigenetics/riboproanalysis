@@ -1,10 +1,12 @@
-# RiboProAnalysis
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1311853.svg)](https://doi.org/10.5281/zenodo.1311853)
 
-**RiboProAnalysis** is a pipeline for Ribosome Profiling analysis of any eukaryotic genome from Ensembl 75+ or later.
+# RiboProPipe Analysis
+
+**RiboProPipe** is a pipeline for Ribosome Profiling analysis of any eukaryotic genome from Ensembl 75+ or later.
 It performs all the necessary pre-processing steps (quality control, filtering, trimming and size selection), filter reads mapped to rRNA, map to reference genome, counting on CDS for each gene and differential analysis from raw Ribosome Profiling data.
 
 ## Usage
-RiboProAnalysis can be used either via a Docker image (_URL_HERE!!!_) or a standard Bash script with several options. It can be used to perform demultiplexing on multiplexed FASTQ (reads MUST begin with the index sequence). Availability of RNA-seq count data allows comparison of transcript abundance with riboseq counts, providing a proxy to analyse the regulation level during differential analysis.
+RiboProPipe can be used either via a standard Bash script with several options. It can be used to perform demultiplexing on multiplexed FASTQ (reads MUST begin with the index sequence). Availability of RNA-seq count data allows comparison of transcript abundance with riboseq counts, providing a proxy to analyse the regulation level during differential analysis.
 If you use FASTQ files (no demultiplexing), the extension has to be .fastq
 
 A configuration file .conf is mandatory to launch the pipeline.
@@ -27,22 +29,11 @@ STAR --runMode genomeGenerate --genomeDir /path/to/genome/index --genomeFastaFil
 ```
 mkdir tmp/
 ```--->
-* Run the pipeline (there are two options):
-  * Run the RiboProAnalysis docker container (docker mode) with the following command in the working directory:
-  ```
-  docker run --rm --privileged --name ribopro -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd):/home -w /home \
-  -v /etc/passwd:/etc/passwd
-  -v /path/to/rRNA/index:/rRNAindexdirectory \
-  -v /path/to/genome/index:/genomeindexdirectory \
-  -v /path/to/directory/containig/genome/fasta/file:/genomefastafiledirectory \
-  -v /path/to/directory/containing/transcriptome/fasta/file:/transcriptomedirectory \
-  -v /path/to/directory/containig/GTF/Ensembl/annotations:/root \
-  -v $(pwd)/tmp:/tmp \
-  parisepigenetics/riboproanalysis bash -c "riboproanalysisDocker.sh My_configuration_file.conf"
+* Run the pipeline 
   ```
   * Run the RiboProAnalysis bash script (local mode) with the following command in the working directory :
   ```
-  riboproanalysis.sh MyConfigurationFile.conf
+  riboProPipe.sh MyConfigurationFile.conf
   ```
 
 ### Variables to set in the configuration file

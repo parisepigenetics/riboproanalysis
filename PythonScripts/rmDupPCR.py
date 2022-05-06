@@ -1,6 +1,7 @@
-#!/usr/bin/envpython
+#!/usr/bin/env python
 
 ## !!!! IMPORTANT this script needs as stdin the stdout of the following command...  awk '{ i=(NR-1) % 4; tab[i]=$0 ; if (i==3) { print tab[1]"\t"tab[0]"\t"tab[3]"\t"tab[2]} }' | sort -T /tmp
+## IMPORTANT TODO The above awk call can be incorporated to the main python script and ised with a temporary file.
 
 import sys
 import argparse
@@ -28,7 +29,7 @@ quality = 0
 nbReads = 0
 nbKept  = 0
 
-print "DATE OF THE STARTING : " + str(time.strftime("%Y-%m-%d %H:%M:%S"))
+print "STARTING TIME: " + str(time.strftime("%Y-%m-%d %H:%M:%S"))
 for line in entree:
 	line = line.strip()
 	s = line.split("\t")
@@ -77,4 +78,4 @@ except ZeroDivisionError:
 	sys.exit(1)
 
 print "TOTAL COUNT : "+str(nbKept)+" reads kept from "+str(nbReads)+" total ("+str(perct)+"%)."
-print "DATE OF THE END OF THE STEP : " + str(time.strftime("%Y-%m-%d %H:%M:%S"))
+print "END TIME : " + str(time.strftime("%Y-%m-%d %H:%M:%S"))

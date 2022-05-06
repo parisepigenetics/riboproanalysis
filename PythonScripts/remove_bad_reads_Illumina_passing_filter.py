@@ -1,51 +1,41 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import sys
 import argparse
 import time
 
 parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input", required = True, metavar = "input.fastq", help = "Fastq with bad passing filter quality")
-    parser.add_argument("-o", "--output", required = True, metavar = "output.fastq", help = "Fastq without bad passing filter quality")
-    args = parser.parse_args()
-    FQ = args.input
-    Out = args.output
+parser.add_argument("infileh", nargs='?', type = argparse.FileType('r'), metavar = "input_fastq", help = "A fastq file with all the reads.")
+parser.add_argument("outfileh", nargs='?', type = argparse.FileType('w'), metavar = "output_fastq", default = sys.stdout, help = "A fastq file with reads passed the quality control")
+args = parser.parse_args()
 
-try:
-	fileFQ = open(FQ,"r")
-except IOError:
-	print "No such file or directory " + FQ
-	sys.exit(1)
-
-fileOut = open(Out,"w")
+infileh = args.infileh
+outfileh = args.outfileh
 
 nbKept = 0
 nbReads = 0
 
-print "DATE OF STARTING : " + str(time.strftime("%Y-%m-%d %H:%M:%S"))
-while 1:
-	line1 = fileFQ.readline()
-	line1 = line1.strip()
-	if line1 == "":
+sys.stderr.write("START TIME: " + str(time.strftime("%Y-%m-%d %H:%M:%S")) + "\n")
+while True:
+	line = infileh.readline().strip()
+	if line == "":
 		break
-	line2 = fileFQ.readline()
-	line2 = line2.strip()
-	line3 = fileFQ.readline()
-	line3 = line3.strip()
-	line4 = fileFQ.readline()
-	line4 = line4.strip()
-	result = line1.split(":")[-3]
-	if result == "N":
-		fileOut.write(line1 + "\n" + line2 + "\n" + line3 + "\n" + line4 + "\n")
+	res = line.split(":")[-3]
+	if res == "N":
+		outfileh.write(line + "\n" + infileh.readline() + infileh.readline() + infileh.readline())
 		nbKept += 1
+	else:	
+	  infileh.readline()
+	  infileh.readline()
+	  infileh.readline()
 	nbReads += 1
 
-fileFQ.close()
-fileOut.close()
+infileh.close()
+outfileh.close()
 
 ## output some stats to stdout
 perct = float(nbKept)/float(nbReads) * 100
 perct = "{0:.2f}".format(perct)
-print "TOTAL COUNT : "+str(nbKept)+" reads kept from "+str(nbReads)+" total ("+str(perct)+"%)."
-print "INFO : reads have been written to "+str(Out)+" in FASTQ format."
-print "DATE OF THE END OF THE STEP : " + str(time.strftime("%Y-%m-%d %H:%M:%S"))
+sys.stderr.write("TOTAL COUNT: " + str(nbKept) + " reads kept from " + str(nbReads) + " total (" + perct + "%)." + "\n")
+sys.stderr.write("INFO: reads have been written to " + outfileh.name + " in FASTQ format." + "\n")
+sys.stderr.write("DATE OF THE END OF THE STEP: " + time.strftime("%Y-%m-%d %H:%M:%S") + "\n")
